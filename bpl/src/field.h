@@ -1,7 +1,6 @@
 #pragma once
-// #include "manager.hpp"
 
-// Fieldontaner template
+// Field contaner template
 template<typename T>
 class Field{
   public:

@@ -1,7 +1,6 @@
 #pragma once
-// #include "manager.hpp"
 
-// ParticleBase template
+// ParticleBunch container template
 template<typename T>
 class ParticleBase {
   public:
@@ -12,7 +11,7 @@ class ParticleBase {
     std::vector<T> values;
 
     ParticleBase();
-    ParticleBase(std::string name);
+    ParticleBase(std::string name, T v);
 };
 
 
