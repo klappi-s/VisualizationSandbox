@@ -26,10 +26,3 @@ Field<T>::Field(std::string name, T v){
     
     
 }
-
-
-// VisBase<T>::pf = std::make_unique<std::vector<std::shared_ptr<Field<T>>>>();
-// if (!VisBase<T>::fc) std::cout << "manager needs to be created befor" << std<::endl;
-// VisBase<T>::fc->push_back(std::make_shared<Field<T>>());
-// VisManager<pc_t, fc_t>::fc->push_back(std::make_unique<Field<T>>(*this));
-// VisManager<pc_t, fc_t>::fc->push_back(std::make_shared<Field<T>>(*this));

@@ -28,9 +28,3 @@ ParticleBase<T>::ParticleBase(std::string name, T v){
     
 }
 
-
-
-
-
-// if (!VisBase<T>::pc) VisBase<T>::pc = std::make_unique<std::vector<std::shared_ptr<ParticleBase<T>>>>();
-// VisManager<pc_t, fc_t>::pc->push_back(std::make_shared<ParticleBase<T>>(*this));

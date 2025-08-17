@@ -14,17 +14,14 @@ class VisBase{
 };
 
 
-
-
-
 template<typename pc_T, typename fc_T>
 class VisManager 
 : public VisBase
 {
   public:
-
-    
     VisManager();
+
+
 
     std::vector<pc_T*> pc_v;
     // std::vector<fc_T*> fc_v;
@@ -35,8 +32,6 @@ class VisManager
     // inline static std::unique_ptr<std::vector<pc_T*>> pc; 
     
     
-  
-    
     // inline static std::vector<fc_T*>* fc;
     // inline static std::shared_ptr<std::vector<fc_T*>> fc;
     inline static std::unique_ptr<std::vector<fc_T*>> fc;
@@ -44,11 +39,6 @@ class VisManager
 };
 
 #include"VisBase.hpp"
-
-
-
-    
-
 
 
 

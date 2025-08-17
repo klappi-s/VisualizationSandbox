@@ -4,6 +4,11 @@
 
 
 class BaseManager{
+
+
+
+
+
   public:
   
     // BaseManager()          = default;
@@ -33,14 +38,18 @@ class BaseManager{
 };
 
 
+
 class BaseManagerVis : public BaseManager {
   public:
+
+  /* PROBLEM */
+    using pc_t_ = ParticleBase<double>;
+    using fc_t_ = Field<double>;
+    using vb_t = VisManager<pc_t_, fc_t_>;
     // BaseManagerVis();
 
-    // BaseManagerVis()          = default;
-
-    /* run was not intended to be overwritten but we do it anyway ... so no keyword override */
     
+    /* run was not intended to be overwritten but we do it anyway ... so no keyword override */
     // void run();
     // void pre_run();
     
@@ -48,8 +57,10 @@ class BaseManagerVis : public BaseManager {
     void post_step();
     void advance();
 
-//   private:
-    vb_t vb;
+
+
+      /* moved to bpl namespace */
+       // vb_t vb;
     
 
 
@@ -68,3 +79,38 @@ void BaseManagerVis::post_step(){
 void BaseManagerVis::advance(){
     // set some internal state
 }
+
+
+
+
+
+/* 
+template<typename vb_T>
+class BaseManagerVis : public BaseManager {
+  public:
+    
+    void pre_step();
+    void post_step();
+    void advance();
+
+    vb_T vb;
+    
+};
+
+
+template<typename vb_T>
+void BaseManagerVis<vb_T>::pre_step(){
+    // set some internal state
+}
+
+template<typename vb_T>
+void BaseManagerVis<vb_T>::post_step(){
+    // set some internal state
+}
+
+
+
+template<typename vb_T>
+void BaseManagerVis<vb_T>::advance(){
+    // set some internal state
+} */

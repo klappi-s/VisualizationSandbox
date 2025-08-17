@@ -2,29 +2,19 @@
 
 
 
+#include <cassert>
 #include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
 
-#include <cassert>
-
-#define assertm(exp, msg) assert((void(msg), exp))
-
-
-
-
-// Forward declare ParticleBase to avoid circular include
-
-// template<typename pc_T, typename fc_T>
-// class VisBase;
-
-template<typename pc_T, typename fc_T>
-class VisManager ;
-// : public VisBase;
 
 
 /* FORWARD DECLARATIONS */
+
+template<typename pc_T, typename fc_T>
+class VisManager ;
+
 template<typename T>
 class ParticleBase;
 
@@ -36,30 +26,28 @@ class Field;
 #include "VisBase.h"
 #include "particle.h"
 #include "field.h"
-
-
-using pc_t_ = ParticleBase<double>;
-using fc_t_ = Field<double>;
-using vb_t = VisManager<pc_t_, fc_t_>;
-
-// using vb_t_ = VisBase;
-
 #include "manager.h"
 
 
 
-namespace bpl{
+
+namespace bpl {
+
+
+        /* this works i guess ... */
+
+        std::unique_ptr<VisBase> vb;
+
+        template<typename pc_T, typename fc_T>
+        void initializeVisualization() {
+          bpl::vb = std::make_unique<VisManager<pc_T, fc_T>>();
+        }
 
 
 
-    // std::shared_ptr<VisBase> ptr;
-    // VisManager<pc_t_, fc_t_> vm;
 
-    // ptr = std::make_shared(&)
-
-
-
-
-
-
+    // Default types... dont really work i thin for circumventing our problem ..
+    // using DefaultParticle = ParticleBase<double>;
+    // using DefaultField = Field<double>;
+    // using DefaultVisManager = VisManager<DefaultParticle, DefaultField>;
 }
