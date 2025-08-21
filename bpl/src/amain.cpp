@@ -1,4 +1,3 @@
-#include "bpl.h"
 
 
 
@@ -10,55 +9,64 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <array>
+
+
+constexpr unsigned Dim = 3;
+using T                = double;
+
+#include "bpl.h"
 
 int main(){
 
     
-    using pc_t_ = ParticleBase<double>;
-    using fc_t_ = Field<double>;
-    using vb_t = VisManager<pc_t_, fc_t_>;
+    // using pc_t_ = ParticleBase<T,Dim>;
+    // using fc_t_ = Field<T,Dim>;
+    using vb_t = VisRegistry<T,Dim>;
 
     
-    // Field<double> fff;
-    // ParticleBase<double> ppp;
+    // Field<T,Dim> fff;
+    // ParticleBase<T,Dim> ppp;
     // vb_t vm;
     // BaseManagerVis manager;
     
 
-    bpl::initializeVisualization<pc_t_, fc_t_>();
+    bpl::initializeVisualization<T, Dim>();
     
 
 
 
     std::cout << "Manager created"<< std::endl;
-    std::cout << vb_t::fc->size() << std::endl;
-    Field<double> f0;
-    std::cout << vb_t::fc->size() << std::endl;
-    Field<double> f1("a Name", 3);
-    std::cout << vb_t::fc->size() << std::endl;
-    Field<double> f2("another Name", 3);
-    Field<double> f3;
-    std::cout << vb_t::fc->size() << std::endl;
-    std::cout << (*vb_t::fc)[0]->fcName << " has  value = " << (*vb_t::fc)[1]->value << std::endl;
-    std::cout << (*vb_t::fc)[1]->fcName << " has  value = " << (*vb_t::fc)[1]->value << std::endl;
-    std::cout << (*vb_t::fc)[2]->fcName << " has  value = " << (*vb_t::fc)[1]->value << std::endl;
-    std::cout << (*vb_t::fc)[3]->fcName << " has  value = " << (*vb_t::fc)[1]->value << std::endl;
+    std::cout << vb_t::sf_c->size() << std::endl;
+    Field<T,Dim> f0;
+    std::cout << vb_t::sf_c->size() << std::endl;
+    Field<T,Dim> f1("a Name", 1.0);
+    std::cout << vb_t::sf_c->size() << std::endl;
+    Field<T,Dim> f2("another Name", 2.0);
+    Field<T,Dim> f3;
+
+
+    std::cout << vb_t::sf_c->size() << std::endl;
+    std::cout << (*vb_t::sf_c)[0]->field_ID << " has  value = " << (*vb_t::sf_c)[0]->value << std::endl;
+    std::cout << (*vb_t::sf_c)[1]->field_ID << " has  value = " << (*vb_t::sf_c)[1]->value << std::endl;
+    std::cout << (*vb_t::sf_c)[2]->field_ID << " has  value = " << (*vb_t::sf_c)[2]->value << std::endl;
+    std::cout << (*vb_t::sf_c)[3]->field_ID << " has  value = " << (*vb_t::sf_c)[3]->value << std::endl;
 
     
 
     
     
     
-    std::cout << vb_t::pc->size() << std::endl;
-    ParticleBase<double> p0;
-    ParticleBase<double> p1;
-    ParticleBase<double> p2("P-Name", 1);
-    ParticleBase<double> p3;
-    std::cout << vb_t::pc->size() << std::endl;
-    std::cout << (*vb_t::pc)[0]->pcName << std::endl;
-    std::cout << (*vb_t::pc)[1]->pcName << std::endl;
-    std::cout << (*vb_t::pc)[2]->pcName << std::endl;
-    std::cout << (*vb_t::pc)[3]->pcName << std::endl;
+    std::cout << vb_t::pb_c->size() << std::endl;
+    ParticleBase<T,Dim> p0;
+    ParticleBase<T,Dim> p1;
+    ParticleBase<T,Dim> p2("P-Name", std::array<T,Dim>{1.0,2,3});
+    ParticleBase<T,Dim> p3;
+    std::cout << vb_t::pb_c->size() << std::endl;
+    std::cout << (*vb_t::pb_c)[0]->bunch_ID << std::endl;
+    std::cout << (*vb_t::pb_c)[1]->bunch_ID << std::endl;
+    std::cout << (*vb_t::pb_c)[2]->bunch_ID << std::endl;
+    std::cout << (*vb_t::pb_c)[3]->bunch_ID << std::endl;
 
     
 

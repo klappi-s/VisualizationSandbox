@@ -1,13 +1,13 @@
 #pragma once
 
 // Field contaner template
-template<typename T>
+template<typename T, unsigned Dim>
 class Field{
   public:
 
     
     inline static int counter = 0;
-    std::string fcName;
+    std::string field_ID;
     T value;
 
     

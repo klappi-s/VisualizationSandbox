@@ -12,13 +12,13 @@
 
 /* FORWARD DECLARATIONS */
 
-template<typename pc_T, typename fc_T>
-class VisManager ;
+template<typename T, unsigned Dim, unsigned VDim>
+class VisRegistry ;
 
-template<typename T>
+template<typename T, unsigned Dim>
 class ParticleBase;
 
-template<typename T>
+template<typename T, unsigned Dim>
 class Field;
 
 
@@ -26,8 +26,6 @@ class Field;
 #include "VisBase.h"
 #include "particle.h"
 #include "field.h"
-#include "manager.h"
-
 
 
 
@@ -36,18 +34,22 @@ namespace bpl {
 
         /* this works i guess ... */
 
-        std::unique_ptr<VisBase> vb;
+        // std::unique_ptr<VisBase> vb;
+        std::unique_ptr<VisRegistry<T, Dim>> vb;
+        /* no need to be of visbase but important to see this works?*/
 
-        template<typename pc_T, typename fc_T>
+
+
+        template<typename T, unsigned Dim>
         void initializeVisualization() {
-          bpl::vb = std::make_unique<VisManager<pc_T, fc_T>>();
+          bpl::vb = std::make_unique<VisRegistry<T, Dim>>();
         }
 
 
 
 
     // Default types... dont really work i thin for circumventing our problem ..
-    // using DefaultParticle = ParticleBase<double>;
-    // using DefaultField = Field<double>;
-    // using DefaultVisManager = VisManager<DefaultParticle, DefaultField>;
+    // using DefaultParticle = ParticleBase<T,Dim>;
+    // using DefaultField = Field<T,Dim>;
+    // using DefaultVisRegistry = VisRegistry<DefaultParticle, DefaultField>;
 }

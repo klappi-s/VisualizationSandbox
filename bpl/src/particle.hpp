@@ -1,30 +1,28 @@
 #include"bpl.h"
 
 
-template<typename T>
-ParticleBase<T>::ParticleBase() : 
-    ParticleBase<T>("unnamed_"+ std::to_string(counter), 0)
+template<typename T, unsigned Dim>
+ParticleBase<T,Dim>::ParticleBase() : 
+    ParticleBase<T,Dim>("unnamed_"+ std::to_string(counter), std::array<T,Dim>{})
 {
     ++counter;
 }
 
 
-template<typename T>
-ParticleBase<T>::ParticleBase(std::string name, T v){
+template<typename T, unsigned Dim>
+ParticleBase<T,Dim>::ParticleBase(std::string name, std::array<T,3> v){
 
 
-    using pc_t = ParticleBase<T>;
-    using fc_t = Field<T>;
 
 
-    pcName = name;
+    bunch_ID = name;
     values.push_back(v);
     
-    assert( (VisManager<pc_t, fc_t>::pc ) && "VisManager<double>::pc is nullptr, no instance of VisManager was created" );
+    assert( (VisRegistry<T, Dim>::pb_c ) && "VisRegistry<double>::pb_c is nullptr, no instance of VisRegistry was created" );
     
     
     std::cout << "creating particle container" << std::endl;
-    VisManager<pc_t, fc_t>::pc->push_back(this);
+    // VisRegistry<T, Dim>::pb_c->push_back(this);
     
 }
 

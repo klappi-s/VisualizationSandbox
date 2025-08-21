@@ -1,49 +1,81 @@
 #pragma once
-// #include "manager.hpp"
-/* circular inclusion not hindered by pragma once???ö. */
-
-
-
-
-// template<typename pc_T, typename fc_T>
-// ->
-// class VisManager : public VisBase<pc_T, fc_T> {
 
 class VisBase{
-  double member;
+std::string vis_ID;
 };
 
 
-template<typename pc_T, typename fc_T>
-class VisManager 
+
+// template<typename T, unsigned Dim, unsigned VDim>
+// class VisSubRegistry
+// : public VisBase
+// {
+//   public:
+//     VisSubRegistry();
+
+//     using sf_c_t = Field<std::array<T,VDim>,Dim>;
+
+//     inline static std::unique_ptr<std::vector<vf_c_t*>> vf_c;
+    
+    
+//     //     inline static std::unique_ptr<std::vector<ParticleBase<T,Dim>*>> pb_c; 
+//     //     inline static std::unique_ptr<std::vector<Field<T,Dim>*>> sf_c;
+//     private:
+//     VisRegistry<T, Dim, VDim-1> subRegistry;
+
+// };
+
+// // template<typename T, unsigned Dim, unsigned VDim>
+// template<typename T, unsigned Dim>
+// class VisSubRegistry<T, Dim, 1>
+// : public VisBase
+// {
+//   public:
+//     VisSubRegistry();
+
+//     using vf_c_t = Field<std::array<T,VDim>,Dim>;
+
+//     inline static std::unique_ptr<std::vector<vf_c_t*>> vf_c;
+    
+    
+// };
+
+
+
+// template<typename T, unsigned Dim, unsigned VDim = 3, bool Vbool>
+template<typename T, unsigned Dim, unsigned VDim = 3>
+class VisRegistry
 : public VisBase
 {
   public:
-    VisManager();
+    VisRegistry();
+
+    using pb_c_t = ParticleBase<T,Dim>;
+    using sf_c_t = Field<T,Dim>;
+    // using vf_c_t = Field<std::array<T,VDim>,Dim>;
 
 
-
-    std::vector<pc_T*> pc_v;
-    // std::vector<fc_T*> fc_v;
-
-
-    inline static std::vector<pc_T*>* pc; 
-    // inline static std::shared_ptr<std::vector<pc_T*>> pc; 
-    // inline static std::unique_ptr<std::vector<pc_T*>> pc; 
+    inline static std::unique_ptr<std::vector<pb_c_t*>> pb_c; 
+    inline static std::unique_ptr<std::vector<sf_c_t*>> sf_c; 
+    // inline static std::unique_ptr<std::array<vf_c_t*>> vf_c;
     
     
-    // inline static std::vector<fc_T*>* fc;
-    // inline static std::shared_ptr<std::vector<fc_T*>> fc;
-    inline static std::unique_ptr<std::vector<fc_T*>> fc;
+    //     inline static std::unique_ptr<std::vector<ParticleBase<T,Dim>*>> pb_c; 
+    //     inline static std::unique_ptr<std::vector<Field<T,Dim>*>> sf_c;
+    private:
+    // VisRegistry<T, Dim-1, VDim> subD;
+    // VisSubRegistry<T, Dim, VDim> subV;
 
 };
+
+
+
+
+
 
 #include"VisBase.hpp"
 
 
-
-// friend class BaseManagerVis;
-// friend class Field<T>;
-// friend class ParticleBase<T>;
-
-    
+/* only make sense with higher handler object but i think that not worth */
+// inline static std::unique_ptr<std::vector<std::unique_ptr<pc_T>>> pb_c; 
+// inline static std::unique_ptr<std::vector<std::unique_ptr<fc_T>>> sf_c;
