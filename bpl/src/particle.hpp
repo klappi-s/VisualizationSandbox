@@ -12,17 +12,13 @@ ParticleBase<T,Dim>::ParticleBase() :
 template<typename T, unsigned Dim>
 ParticleBase<T,Dim>::ParticleBase(std::string name, std::array<T,3> v){
 
-
-
-
     bunch_ID = name;
     values.push_back(v);
     
-    assert( (VisRegistry<T, Dim>::pb_c ) && "VisRegistry<double>::pb_c is nullptr, no instance of VisRegistry was created" );
-    
+    assert( (VisSubRegistry<T,Dim,1>::pb_c ) && "VisRegistry<double>::pb_c is nullptr, no instance of VisRegistry was created" );  
     
     std::cout << "creating particle container" << std::endl;
-    // VisRegistry<T, Dim>::pb_c->push_back(this);
+    VisSubRegistry<T, Dim,1>::pb_c->push_back(this);
     
 }
 
