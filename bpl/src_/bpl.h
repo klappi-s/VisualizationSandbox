@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <array>
 
 
 
@@ -39,7 +40,9 @@ class Field;
 #include "VisBase.h"
 #include "particle.h"
 #include "field.h"
+#include "VisBase.hpp"
 
 namespace bpl {
-    std::unique_ptr<VisBase> vb;void initializeVisualization() {bpl::vb = std::make_unique<VisBase>();}
+    extern std::unique_ptr<VisBase> vb;
+    void initializeVisualization();
 }

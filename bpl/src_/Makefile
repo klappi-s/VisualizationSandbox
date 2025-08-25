@@ -14,15 +14,15 @@ AMAIN_EXE := $(OBJDIR)/amain
 .PHONY: all clean run run_amain run_test_print test amain help
 
 # Default target builds both executables
-all: $(AMAIN_EXE) $(TEST_PRINT_EXE)
+all: $(AMAIN_EXE)
 
 # Create build directory
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
 
 # Build amain executable
-$(AMAIN_EXE): amain.cpp VisBase.h | $(OBJDIR)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $<
+$(AMAIN_EXE): amain.cpp VisBase.h VisBase.hpp VisBase.cpp | $(OBJDIR)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ amain.cpp VisBase.cpp
 
 # Build test_print_simple executable  
 $(TEST_PRINT_EXE): test_print_simple.cpp VisBase.h | $(OBJDIR)
