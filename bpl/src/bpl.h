@@ -57,15 +57,15 @@ namespace bpl {
         /* this works i guess ... */
 
         // std::unique_ptr<VisBase> vb;
-        std::unique_ptr<VisRegistry<T, Dim>> vb;
+        // std::unique_ptr<VisRegistry<T, Dim>> vb;
         /* no need to be of visbase but important to see this works?*/
 
 
 
-        template<typename T, unsigned Dim>
-        void initializeVisualization() {
-          bpl::vb = std::make_unique<VisRegistry<T, Dim>>();
-        }
+        // template<typename T, unsigned Dim>
+        // void initializeVisualization() {
+        //   bpl::vb = std::make_unique<VisRegistry<T, Dim>>();
+        // }
 
 
 

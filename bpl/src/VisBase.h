@@ -3,10 +3,23 @@
 #include <memory>
 #include <vector>
 #include <utility>
+#include <optional>
+#include <iostream>
+#include <string>
+#include <typeinfo>
 
-// Forward declaration
+// Forward declarations
 template<typename T, unsigned Dim, unsigned VDim>
 class VisSubRegistry;
+
+template<typename T, unsigned Dim>
+class Field;
+
+template<typename T, unsigned Dim>
+class ParticleBase;
+
+template<typename T, unsigned Dim>
+struct vec;
 
 
 
@@ -276,6 +289,195 @@ public:
     template<unsigned AccessDim, unsigned AccessVDim>
     static constexpr auto& get_vf_c() noexcept { 
         return VisSubRegistry<T, AccessDim, AccessVDim>::vf_c; 
+    }
+    
+    // ===== FIELD RETRIEVAL BY ID FUNCTIONALITY =====
+    
+    // Find field by ID across all scalar field containers (returns void* for flexibility)
+    template<unsigned SearchDim = Dim>
+    static void* findScalarFieldByID_impl(const std::string& field_id) noexcept {
+        auto& container = VisSubRegistry<T, SearchDim, 1>::sf_c;
+        if (container) [[likely]] {
+            for (auto* field : *container) {
+                if (field && field->field_ID == field_id) [[likely]] {
+                    return field;
+                }
+            }
+        }
+        
+        // Recursively search lower dimensions
+        if constexpr (SearchDim > 1) {
+            return findScalarFieldByID_impl<SearchDim - 1>(field_id);
+        }
+        
+        return nullptr;
+    }
+    
+    // Type-safe wrapper for scalar field search
+    template<unsigned SearchDim = Dim>
+    static Field<T, SearchDim>* findScalarFieldByID(const std::string& field_id) noexcept {
+        return static_cast<Field<T, SearchDim>*>(findScalarFieldByID_impl<SearchDim>(field_id));
+    }
+    
+    // Find vector field by ID with specific VDim (returns void* for flexibility)
+    template<unsigned SearchDim = Dim, unsigned SearchVDim = 3>
+    static void* findVectorFieldByID_impl(const std::string& field_id) noexcept {
+        auto& container = VisSubRegistry<T, SearchDim, SearchVDim>::vf_c;
+        if (container) [[likely]] {
+            for (auto* field : *container) {
+                if (field && field->field_ID == field_id) [[likely]] {
+                    return field;
+                }
+            }
+        }
+        
+        // Recursively search other dimensions
+        if constexpr (SearchDim > 1) {
+            void* result = findVectorFieldByID_impl<SearchDim - 1, SearchVDim>(field_id);
+            if (result) return result;
+        }
+        
+        if constexpr (SearchVDim > 1) {
+            return findVectorFieldByID_impl<SearchDim, SearchVDim - 1>(field_id);
+        }
+        
+        return nullptr;
+    }
+    
+    // Type-safe wrapper for vector field search
+    template<unsigned SearchDim = Dim, unsigned SearchVDim = 3>
+    static Field<vec<T, SearchVDim>, SearchDim>* findVectorFieldByID(const std::string& field_id) noexcept {
+        return static_cast<Field<vec<T, SearchVDim>, SearchDim>*>(
+            findVectorFieldByID_impl<SearchDim, SearchVDim>(field_id));
+    }
+    
+    // Generic field finder that searches both scalar and vector fields
+    static void* findFieldByID(const std::string& field_id) noexcept {
+        // Try scalar fields first
+        if (void* scalar_field = findScalarFieldByID_impl(field_id)) {
+            return scalar_field;
+        }
+        
+        // Try vector fields
+        if (void* vector_field = findVectorFieldByID_impl(field_id)) {
+            return vector_field;
+        }
+        
+        return nullptr;
+    }
+    
+    // ===== PARTICLE RETRIEVAL BY ID FUNCTIONALITY =====
+    
+    // Find particle by ID across all particle containers (returns void* for flexibility)
+    template<unsigned SearchDim = Dim>
+    static void* findParticleByID_impl(const std::string& particle_id) noexcept {
+        auto& container = VisSubRegistry<T, SearchDim, 1>::pb_c;
+        if (container) [[likely]] {
+            for (auto* particle : *container) {
+                if (particle && particle->bunch_ID == particle_id) [[likely]] {
+                    return particle;
+                }
+            }
+        }
+        
+        // Recursively search lower dimensions
+        if constexpr (SearchDim > 1) {
+            return findParticleByID_impl<SearchDim - 1>(particle_id);
+        }
+        
+        return nullptr;
+    }
+    
+    // Type-safe wrapper for particle search
+    template<unsigned SearchDim = Dim>
+    static ParticleBase<T, SearchDim>* findParticleByID(const std::string& particle_id) noexcept {
+        return static_cast<ParticleBase<T, SearchDim>*>(findParticleByID_impl<SearchDim>(particle_id));
+    }
+    
+    // ===== UTILITY FUNCTIONS =====
+    
+    // Get data from field by ID (returns std::optional for safety)
+    template<typename DataType = T>
+    static std::optional<DataType> getFieldData(const std::string& field_id) noexcept {
+        if (auto* field = findScalarFieldByID(field_id)) {
+            if constexpr (std::is_same_v<DataType, T>) {
+                return field->data;
+            }
+        }
+        return std::nullopt;
+    }
+    
+    // Get vector field data by ID
+    template<unsigned VDim, typename DataType = vec<T, VDim>>
+    static std::optional<DataType> getVectorFieldData(const std::string& field_id) noexcept {
+        if (auto* field = findVectorFieldByID<Dim, VDim>(field_id)) {
+            return field->data;
+        }
+        return std::nullopt;
+    }
+    
+    // Get particle data by ID
+    template<typename DataType = std::vector<std::array<T, Dim>>>
+    static std::optional<DataType> getParticleData(const std::string& particle_id) noexcept {
+        if (auto* particle = findParticleByID(particle_id)) {
+            return particle->values;
+        }
+        return std::nullopt;
+    }
+    
+    // Print field information by ID
+    static void printFieldInfo(const std::string& field_id) noexcept {
+        std::cout << "=== Field Information ===" << std::endl;
+        std::cout << "Searching for field ID: '" << field_id << "'" << std::endl;
+        
+        // Search scalar fields
+        if (void* scalar_field_ptr = findScalarFieldByID_impl(field_id)) {
+            auto* scalar_field = static_cast<Field<T, Dim>*>(scalar_field_ptr);
+            std::cout << "Found scalar field!" << std::endl;
+            std::cout << "Type: Field<" << typeid(T).name() << ", " << Dim << ">" << std::endl;
+            std::cout << "Data: " << scalar_field->data << std::endl;
+            return;
+        }
+        
+        // Search vector fields  
+        if (void* vector_field_ptr = findVectorFieldByID_impl(field_id)) {
+            std::cout << "Found vector field!" << std::endl;
+            std::cout << "Type: Field<vec<" << typeid(T).name() << ", ?>, ?>" << std::endl;
+            // Note: Could enhance to print actual dimensions and data
+            return;
+        }
+        
+        std::cout << "Field not found!" << std::endl;
+    }
+    
+    // Print particle information by ID
+    static void printParticleInfo(const std::string& particle_id) noexcept {
+        std::cout << "=== Particle Information ===" << std::endl;
+        std::cout << "Searching for particle ID: '" << particle_id << "'" << std::endl;
+        
+        if (void* particle_ptr = findParticleByID_impl(particle_id)) {
+            auto* particle = static_cast<ParticleBase<T, Dim>*>(particle_ptr);
+            std::cout << "Found particle!" << std::endl;
+            std::cout << "Type: ParticleBase<" << typeid(T).name() << ", " << Dim << ">" << std::endl;
+            std::cout << "Number of values: " << particle->values.size() << std::endl;
+            
+            // Print first few values if available
+            if (!particle->values.empty()) {
+                std::cout << "Sample values: ";
+                for (size_t i = 0; i < std::min(size_t(3), particle->values.size()); ++i) {
+                    std::cout << "[";
+                    for (unsigned j = 0; j < Dim; ++j) {
+                        std::cout << particle->values[i][j];
+                        if (j < Dim - 1) std::cout << ", ";
+                    }
+                    std::cout << "] ";
+                }
+                std::cout << std::endl;
+            }
+            return;
+        }
+        
+        std::cout << "Particle not found!" << std::endl;
     }
     
     // Apply function to all vector fields across the entire 2D grid
