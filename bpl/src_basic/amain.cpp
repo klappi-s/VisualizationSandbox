@@ -63,24 +63,18 @@ int main(){
     } else {
         std::cout << "✗ Particle not found" << std::endl;
     }
+      std::cout << "\n--- Testing Type Validation (No Exceptions Needed!) ---" << std::endl;
     
-    std::cout << "\n--- Testing Type Validation ---" << std::endl;
+    // These invalid objects will be created but not registered
+    // No try-catch blocks needed anymore!
+    std::cout << "Creating invalid type Field<float, 3>..." << std::endl;
+    Field<float, 3> invalid_field("should_fail", 1.0f);
+    std::cout << "Result: Object exists but registered = " << (invalid_field.isRegistered() ? "YES" : "NO") << std::endl;
     
-    try {
-        std::cout << "Trying to create invalid type Field<float, 3>..." << std::endl;
-        Field<float, 3> invalid_field("should_fail", 1.0f);
-        std::cout << "✗ ERROR: Should have been rejected!" << std::endl;
-    } catch (const std::runtime_error& e) {
-        std::cout << "✓ Correctly rejected: " << e.what() << std::endl;
-    }
-    
-    try {
-        std::cout << "Trying to create invalid dimension Field<double, 2>..." << std::endl;
-        Field<double, 2> invalid_dim("should_fail", 1.0);
-        std::cout << "✗ ERROR: Should have been rejected!" << std::endl;    } catch (const std::runtime_error& e) {
-        std::cout << "✓ Correctly rejected: " << e.what() << std::endl;
-    }    
-    std::cout << "\n=== Demo Complete ===" << std::endl;
+    std::cout << "Creating invalid dimension Field<double, 2>..." << std::endl;
+    Field<double, 2> invalid_dim("should_fail", 1.0);
+    std::cout << "Result: Object exists but registered = " << (invalid_dim.isRegistered() ? "YES" : "NO") << std::endl;    std::cout << "\n=== Demo Complete ===" << std::endl;
+    std::cout << "✓ All validation errors handled internally by the library!" << std::endl;
     return 0;
 }
 

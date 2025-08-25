@@ -54,6 +54,12 @@ test_simplified: $(TEST_SIMPLIFIED_EXE)
 	@echo "=== Running Simplified Registry Test ==="
 	@./$(TEST_SIMPLIFIED_EXE)
 
+
+# Build and run test_simplified_registry
+test_simplified_registry: $(TEST_SIMPLIFIED_EXE)
+	@echo "=== Running Simplified Registry Test ==="
+	@./$(TEST_SIMPLIFIED_EXE)
+
 # Build and run amain_simplified
 amain_simplified: $(AMAIN_SIMPLIFIED_EXE)
 	@echo "=== Running Comprehensive Simplified Demo ==="
