@@ -261,15 +261,7 @@ public:
     }
 };
 
-
-
-
-
-
-
-
-
-
+        
 
 
 
@@ -290,6 +282,10 @@ public:
     static constexpr auto& get_vf_c() noexcept { 
         return VisSubRegistry<T, AccessDim, AccessVDim>::vf_c; 
     }
+    
+
+
+
     
     // ===== FIELD RETRIEVAL BY ID FUNCTIONALITY =====
     
@@ -366,6 +362,9 @@ public:
         return nullptr;
     }
     
+
+
+
     // ===== PARTICLE RETRIEVAL BY ID FUNCTIONALITY =====
     
     // Find particle by ID across all particle containers (returns void* for flexibility)
@@ -394,6 +393,12 @@ public:
         return static_cast<ParticleBase<T, SearchDim>*>(findParticleByID_impl<SearchDim>(particle_id));
     }
     
+
+
+
+
+
+
     // ===== UTILITY FUNCTIONS =====
     
     // Get data from field by ID (returns std::optional for safety)
@@ -425,6 +430,12 @@ public:
         return std::nullopt;
     }
     
+
+
+
+
+
+
     // Print field information by ID
     static void printFieldInfo(const std::string& field_id) noexcept {
         std::cout << "=== Field Information ===" << std::endl;
@@ -480,6 +491,17 @@ public:
         std::cout << "Particle not found!" << std::endl;
     }
     
+    // Print the entire state of the registry in a nice formatted way
+    void print_state() const noexcept;
+
+
+
+
+
+
+
+    // ===== APPLY FUNCTIONS TO SINGLE FIELDS BY ID =====
+
     // Apply function to all vector fields across the entire 2D grid
     template<typename Func>
     void apply_to_all_vector_fields(Func&& func) noexcept(noexcept(func)) {
@@ -498,7 +520,156 @@ public:
         VisSubRegistry<T, Dim, 1>::apply_to_all_pb_c(std::forward<Func>(func));
     }
     
-    // Print the entire state of the registry in a nice formatted way
-    void print_state() const noexcept;
+
+
+
+
+    // ===== APPLY FUNCTIONS TO SINGLE FIELDS BY ID =====
+    
+    // Apply function to a single scalar field identified by ID
+    template<typename Func>
+    bool apply_to_scalar_field_by_id(const std::string& field_id, Func&& func) noexcept(noexcept(func)) {
+        // Helper lambda to search and apply at a specific dimension
+        auto search_and_apply = [&]<unsigned SearchDim>() -> bool {
+            if constexpr (SearchDim <= Dim) {
+                auto& container = VisSubRegistry<T, SearchDim, 1>::sf_c;
+                if (container) {
+                    for (auto* field : *container) {
+                        if (field && field->field_ID == field_id) {
+                            // Apply function with proper signature detection
+                            if constexpr (std::is_invocable_v<Func, Field<T, SearchDim>&, unsigned>) {
+                                func(*static_cast<Field<T, SearchDim>*>(field), SearchDim);
+                            } else {
+                                func(*static_cast<Field<T, SearchDim>*>(field));
+                            }
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        };
+        
+        // Search through all dimensions
+        if constexpr (Dim >= 3) {
+            if (search_and_apply.template operator()<3>()) return true;
+        }
+        if constexpr (Dim >= 2) {
+            if (search_and_apply.template operator()<2>()) return true;
+        }
+        if constexpr (Dim >= 1) {
+            if (search_and_apply.template operator()<1>()) return true;
+        }
+        
+        return false; // Field not found
+    }
+    
+    // Apply function to a single vector field identified by ID
+    template<typename Func>
+    bool apply_to_vector_field_by_id(const std::string& field_id, Func&& func) noexcept(noexcept(func)) {
+        // Helper lambda to search and apply at specific (Dim, VDim) combination
+        auto search_and_apply = [&]<unsigned SearchDim, unsigned SearchVDim>() -> bool {
+            if constexpr (SearchDim <= Dim && SearchVDim <= 3) {
+                auto& container = VisSubRegistry<T, SearchDim, SearchVDim>::vf_c;
+                if (container) {
+                    for (auto* field : *container) {
+                        if (field && field->field_ID == field_id) {
+                            // Apply function with proper signature detection
+                            if constexpr (std::is_invocable_v<Func, Field<vec<T, SearchVDim>, SearchDim>&, unsigned, unsigned>) {
+                                func(*static_cast<Field<vec<T, SearchVDim>, SearchDim>*>(field), SearchDim, SearchVDim);
+                            } else {
+                                func(*static_cast<Field<vec<T, SearchVDim>, SearchDim>*>(field));
+                            }
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        };
+        
+        // Search through all (Dim, VDim) combinations
+        if constexpr (Dim >= 3) {
+            if (search_and_apply.template operator()<3, 3>()) return true;
+            if (search_and_apply.template operator()<3, 2>()) return true;
+            if (search_and_apply.template operator()<3, 1>()) return true;
+        }
+        if constexpr (Dim >= 2) {
+            if (search_and_apply.template operator()<2, 2>()) return true;
+            if (search_and_apply.template operator()<2, 3>()) return true;
+            if (search_and_apply.template operator()<2, 1>()) return true;
+        }
+        if constexpr (Dim >= 1) {
+            if (search_and_apply.template operator()<1, 1>()) return true;
+            if (search_and_apply.template operator()<1, 3>()) return true;
+            if (search_and_apply.template operator()<1, 2>()) return true;
+        }
+        
+        return false; // Field not found
+    }
+    
+    // Apply function to a single particle bunch identified by ID
+    template<typename Func>
+    bool apply_to_particle_bunch_by_id(const std::string& bunch_id, Func&& func) noexcept(noexcept(func)) {
+        // Helper lambda to search and apply at a specific dimension
+        auto search_and_apply = [&]<unsigned SearchDim>() -> bool {
+            if constexpr (SearchDim <= Dim) {
+                auto& container = VisSubRegistry<T, SearchDim, 1>::pb_c;
+                if (container) {
+                    for (auto* particle : *container) {
+                        if (particle && particle->bunch_ID == bunch_id) {
+                            // Apply function with proper signature detection
+                            if constexpr (std::is_invocable_v<Func, ParticleBase<T, SearchDim>&, unsigned>) {
+                                func(*static_cast<ParticleBase<T, SearchDim>*>(particle), SearchDim);
+                            } else {
+                                func(*static_cast<ParticleBase<T, SearchDim>*>(particle));
+                            }
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        };
+        
+        // Search through all dimensions
+        if constexpr (Dim >= 1) {
+            if (search_and_apply.template operator()<1>()) return true;
+        }
+        if constexpr (Dim >= 2) {
+            if (search_and_apply.template operator()<2>()) return true;
+        }
+        if constexpr (Dim >= 3) {
+            if (search_and_apply.template operator()<3>()) return true;
+        }
+        
+        return false; // Particle bunch not found
+    }
+    
+    // Apply function to any field (scalar or vector) identified by ID
+    // This method automatically detects whether the field is scalar or vector
+    // and calls the appropriate specialized method
+    template<typename Func>
+    bool apply_to_field_by_id(const std::string& field_id, Func&& func) noexcept(noexcept(func)) {
+        // First try to find it as a scalar field
+        if (apply_to_scalar_field_by_id(field_id, std::forward<Func>(func))) {
+            return true;
+        }
+        
+        // If not found as scalar, try to find it as a vector field
+        if (apply_to_vector_field_by_id(field_id, std::forward<Func>(func))) {
+            return true;
+        }
+        
+        // Field not found in either scalar or vector containers
+        return false;
+    }
+    
+
+
+
+
+    
+
 };
 
