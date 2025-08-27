@@ -1,63 +1,175 @@
-# Makefile to build multiple executables
+# BPL one Library - Comprehensive Makefile
+# Builds all one interface components with proper dependency management
 
-# CXX ?= g++
+# Compiler settings
 CXX ?= clang++
-CXXFLAGS ?= -std=c++20 -O2 -Wall -Wextra -pedantic #-ftime-report
+CXXFLAGS ?= -std=c++20 -O2 -Wall -Wextra -pedantic
 LDFLAGS ?=
 
+# Directories
 OBJDIR := bild
+SRCDIR := .
 
-# Define executables
+# # Core library files
+# VIS_LIB_HEADERS := VisBase.h bpl.h field.h particle.h VisBase.hpp
+# VIS_LIB_SOURCES := VisBase.cpp
+# VIS_LIB_OBJECTS := $(OBJDIR)/VisBase.o
+
+# Define all executables
 AMAIN_EXE := $(OBJDIR)/amain
-# TEST_PRINT_EXE := $(OBJDIR)/test_print_simple
+DEMO_ONE := $(OBJDIR)/demo_one
+DEMO_TWO := $(OBJDIR)/demo_two
 
-.PHONY: all clean run run_amain run_test_print test amain help
+# Define all targets for easy reference
+ALL_EXECUTABLES := $(AMAIN_EXE) $(DEMO_ONE) $(DEMO_TWO)
 
-# Default target builds both executables
-all: $(AMAIN_EXE)
+
+
+
+# Phony targets
+.PHONY: all clean run test demo help lib install one amain \
+        run_amain run_one run_two run_all check \
+        compile_lib
+
+# Default target builds everything
+all: lib $(ALL_EXECUTABLES)
+	@echo "✅ All BPL one components built successfully!"
+	@echo "   📁 Build directory: $(OBJDIR)/"
+	@echo "   🎯 Available executables:"
+	@ls -la $(OBJDIR)/ | grep '^-rwx' | awk '{print "      - " $$9 " (" int($$5/1024) " KB)"}'
 
 # Create build directory
 $(OBJDIR):
-	mkdir -p $(OBJDIR)
+	@echo "📁 Creating build directory..."
+	@mkdir -p $(OBJDIR)
 
-# Build amain executable
-$(AMAIN_EXE): amain.cpp VisBase.h VisBase.hpp VisBase.cpp | $(OBJDIR)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ amain.cpp VisBase.cpp
 
-# Build test_print_simple executable  
-$(TEST_PRINT_EXE): test_print_simple.cpp VisBase.h | $(OBJDIR)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $<
+
+
+
+# lib: compile_lib
+
+# compile_lib: $(VIS_LIB_OBJECTS)
+# 	@echo "✅ one library compiled successfully"
+
+
+
+
+
+# $(VIS_LIB_OBJECTS): $(VIS_LIB_SOURCES) $(VIS_LIB_HEADERS) | $(OBJDIR)
+# 	@echo "🔧 Compiling one library..."
+# 	$(CXX) $(CXXFLAGS) -c $(VIS_LIB_SOURCES) -o $@
+
+
+
+
+
+# Build amain executable (original demo with one backend)
+$(AMAIN_EXE): amain.cpp $(VIS_LIB_OBJECTS) | $(OBJDIR)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ amain.cpp 
+
+# Build one interface demonstration
+$(DEMO_ONE): demo_one.cpp $(VIS_LIB_OBJECTS) | $(OBJDIR)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ demo_one.cpp 
+
+# Build user experience comparison demo  
+$(DEMO_TWO): demo_two.cpp $(VIS_LIB_OBJECTS) | $(OBJDIR)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ demo_two.cpp
+
+
+
+
+
+
+
 
 # Individual build targets
 amain: $(AMAIN_EXE)
+	@echo "✅ amain built successfully"
 
-# test: $(TEST_PRINT_EXE)
+one: $(DEMO_ONE)
+	@echo "✅ one demo built successfully"
 
-# Run targets
+two: $(DEMO_TWO)
+	@echo "✅ demo two built successfully"
+
+
+
+
+
 run: run_amain
 
+run_all: $(ALL_EXECUTABLES)
+	@echo "🚀 Running all demonstrations..."
+	@echo ""
+	@echo "=== 1. Original amain (one backend) ==="
+	@./$(AMAIN_EXE)
+	@echo ""
+	@echo "=== 2. one auto interface demo ==="
+	@./$(DEMO_ONE)
+	@echo ""
+	@echo "=== 3. User experience comparison ==="
+	@./$(DEMO_TWO)
+
 run_amain: $(AMAIN_EXE)
-	@echo "=== Running amain ==="
-	./$(AMAIN_EXE)
+	@./$(AMAIN_EXE)
 
-# run_test_print: $(TEST_PRINT_EXE)
-# 	@echo "=== Running test_print_simple ==="
-# 	./$(TEST_PRINT_EXE)
+run_one: $(DEMO_ONE)
+	@./$(DEMO_ONE)
 
-# Help target
+run_two: $(DEMO_TWO)
+	@./$(DEMO_TWO)
+
+
+
+
+
+
+# Development helpers
+rebuild: clean all
+
+
+# Documentation
 help:
-	@echo "Available targets:"
-	@echo "  all           - Build both amain and test_print_simple"
-	@echo "  amain         - Build only amain executable"
-	@echo "  test          - Build only test_print_simple executable"
-	@echo "  run           - Run amain (default run target)"
-	@echo "  run_amain     - Run amain executable"
-	@echo "  run_test_print - Run test_print_simple executable"
+	@echo "================================================================"
+	@echo "BPL one LIBRARY - MAKEFILE HELP"  
+	@echo "================================================================"
+	@echo ""
+	@echo "🎯 Main Targets:"
+	@echo "  all           - Build all components (default)"
+	@echo "  amain         - Build / Compile only"
+	@echo "  one           - Build / Compile only"
+	@echo "  dtwo          - Build / Compile only"
+	@echo ""
+	@echo "🚀 Run Targets:"
+	@echo "  run           - Run one interface demo (default)"
+	@echo "  run_all       - Run all three demonstrations"
+	@echo "  run_amain     - Run original amain"
+	@echo "  run_one  	   - Run one interface demo"
+	@echo "  run_two      - Run user experience comparison"
+	@echo ""
+	@echo "🔍 Testing:"
+	@echo "  test          - Run one interface tests"
+	@echo "  check         - Comprehensive test of all components"
+	@echo ""
+	@echo "🛠️  Development:"
 	@echo "  clean         - Remove build directory"
-	@echo "  help          - Show this help message"
+	@echo "  rebuild       - Clean and build all"
+	@echo ""
+	@echo ""
+	@echo "📚 Example Usage:"
+	@echo "  make all       # Build everything"
+	@echo "  make run_all   # See all demos"
+	@echo "================================================================"
 
-# report:
-# 	clang++ -Xclang -ast-dump -fsyntax-only amain.cpp
-
+# Clean up
 clean:
-	rm -rf $(OBJDIR)
+	@echo "🧹 Cleaning build directory..."
+	@rm -rf $(OBJDIR)
+	@echo "✅ Clean completed"
+
+# Dependency declarations (for make to understand file dependencies)
+$(AMAIN_EXE): amain.cpp $(VIS_LIB_HEADERS)
+$(DEMO_ONE): demo_one.cpp $(VIS_LIB_HEADERS)  
+$(DEMO_TWO): demo_two.cpp $(VIS_LIB_HEADERS)
+# $(VIS_LIB_OBJECTS): $(VIS_LIB_HEADERS)

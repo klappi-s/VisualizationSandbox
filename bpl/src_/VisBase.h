@@ -1,35 +1,25 @@
 #pragma once
-#include <tuple>
-#include <typeinfo>
-#include <any>
-#include <unordered_map>
-#include <vector>
-#include <string>
-#include <memory>
-#include <functional>
+#include "VIS_forward.h"
 
-// Forward declarations
-class Field_b;
-class ParticleBase_b;
 
-template<typename T, unsigned Dim>
-class Field;
+
+
 
 // Type information: (type_hash, Dim, VDim, is_vector, scalar_type_hash)
 using TypeInfo = std::tuple<size_t, unsigned, unsigned, bool, size_t>;
 
-// Function type for data extraction
-using DataExtractor = std::function<std::any(Field_b*)>;
 
-// Function type for field creation
-using FieldCreator = std::function<std::unique_ptr<Field_b>(const std::any&, const std::string&)>;
 
+
+
+// template<typename ST>
 class VisBase{
     public:
     
     std::string vis_ID;
-    virtual int get_size_pb(){return pb_c.size(); }
-    virtual int get_size_sf(){return sf_c.size(); }
+    virtual ~VisBase() = default;  // Virtual destructor to fix warning
+    virtual int get_size_pb();
+    virtual int get_size_sf();
     
     inline static std::vector<Field_b*> sf_c; 
     inline static std::vector<ParticleBase_b*> pb_c;
@@ -37,31 +27,114 @@ class VisBase{
     // Type information storage parallel to sf_c
     inline static std::vector<TypeInfo> sf_type_info;
     inline static std::unordered_map<std::string, size_t> field_id_map;
-    
-    // Type-specific function registries
-    inline static std::unordered_map<size_t, DataExtractor> data_extractors;
-    inline static std::unordered_map<size_t, FieldCreator> field_creators;
-    
-    // Field retrieval and recreation methods
+
+
+
+
+    static bool hasField(const std::string& field_id);
+
     static Field_b* findFieldByID(const std::string& field_id);
-    static std::any getFieldData(const std::string& field_id);
-    static std::unique_ptr<Field_b> recreateField(size_t index);
+    static ParticleBase_b* findParticleByID(const std::string& particle_id);
+
+    
     static void printFieldInfo(const std::string& field_id);
-    static void listAllFields();
+    static void PrintListFields();
+
+
+    template<typename T, unsigned Dim>
+    static std::vector<std::string> getListFieldsOfType_ID();
+
+
+
+
+   
     
     // Template helper for type registration - registers both type info and extraction functions
-    template<typename T, unsigned Dim>
+    template<typename FT, unsigned Dim>
     static void registerFieldType(Field_b* field_ptr);
+
+
+
+
     
-private:
-    // Internal helper method for registering type handlers
-    static void registerTypeHandlers(size_t type_hash, DataExtractor extractor, FieldCreator creator);
+    // getFieldRef_byType: Returns reference to Field object with exact type match  
+    template<typename FT, unsigned Dim>
+    static std::optional<std::reference_wrapper<Field<FT, Dim>>> getFieldRef_byType(const std::string& field_id);
+    
+
+
+
+    
+
+    // ====== APPLY TO ALL  ======
+    // Apply function to all scalar fields
+    template<typename Func>
+    static void apply_to_all_scalar_fields(Func&& func);
+    
+    // Apply function to all vector fields
+    template<typename Func>
+    static void apply_to_all_vector_fields(Func&& func);
+
+
+    // Apply function to all fields (both scalar and vector)
+    template<typename Func>
+    static void apply_to_all_fields(Func&& func);
+
+
+
+
+    
+
+    // ====== VISITORS  ======
+    /* could be done recursive
+    more DRY nice but probably illegible */
+    using supported_types = std::tuple<double, float, int>;
+
+        // Generic visitor dispatch helper
+    template<typename Visitor, typename ScalarType>
+    static auto visit_field_of_scalar_type(Field_b* field_ptr, unsigned dim, unsigned vdim, bool is_vector, Visitor&& visitor);
+
+
+    // Base case: Ran out of types in the tuple, so the type is unsupported.
+    template<typename Visitor>
+    static auto visit_field_dispatcher(size_t scalar_hash, const std::string& field_id, Field_b* field_ptr, unsigned dim, unsigned vdim, bool is_vector, Visitor&& visitor, std::tuple<>);
+
+    // Recursive step: Check the first type in the tuple.
+    template<typename Visitor, typename Head, typename... Tail>
+    static auto visit_field_dispatcher(size_t scalar_hash, const std::string& field_id, Field_b* field_ptr, unsigned dim, unsigned vdim, bool is_vector, Visitor&& visitor, std::tuple<Head, Tail...>);
+
+
+    template<typename Visitor, typename... ScalarTypes>
+    static auto visit_field_impl(const std::string& field_id, bool expect_vector, Visitor&& visitor, std::tuple<ScalarTypes...>); 
+
+
+    template<typename Visitor>
+    static auto visit_field_impl_2(const std::string& field_id, bool expect_vector, Visitor&& visitor);
+
+
+    // Visit specific scalar field by ID
+    template<typename Visitor>
+    static auto visit_scalar_field(const std::string& field_id, Visitor&& visitor);
+    
+    // Visit specific vector field by ID
+    template<typename Visitor>
+    static auto visit_vector_field(const std::string& field_id, Visitor&& visitor);
+    
+    // Generic visit (auto-detects field type)
+    template<typename Visitor>
+    static auto visit_field(const std::string& field_id, Visitor&& visitor);
+
+
+
+
+
+
+
+
+
+
 };
-
-
-
-
-
+#include "VisBase.hpp"
 
 
 

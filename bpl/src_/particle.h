@@ -16,7 +16,7 @@ class ParticleBase : public ParticleBase_b {
 
 
     inline static int counter = 0;
-    T data;
+    std::array<T, Dim> data;
 
     ParticleBase();
     ParticleBase(std::string name, T v);
