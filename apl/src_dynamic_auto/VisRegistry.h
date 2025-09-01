@@ -1,62 +1,19 @@
 #pragma once
-#include <iostream>
+
+#include "Vis_forward.h"
+
 #include <string>
 #include <unordered_map>
-#include <unordered_set>
-#include <tuple>
-#include <any>
 #include <stdexcept>
-#include <initializer_list>
-#include <string_view>
-#include <type_traits>
 
 
-/////////////////////////////////////////////////////
-// NOOOO STAAAAAATICS... minimize global ...
-/////////////////////////////////////////////////////
 class RegistryBase{
 
     public:
 
     virtual ~RegistryBase() = default;
 
-    struct Entry {
-        std::string name;
-        std::any ptr_any;
-
-        template <typename T>
-        Entry(const std::string& entry_name, T* ptr)
-            : name(entry_name), ptr_any(ptr) {}
-    };
 };
-
-
-
-// Compile-time string literal wrapper (C++20 NTTP).
-template <std::size_t N>
-struct fixed_string {
-    char data[N]{};
-    constexpr fixed_string(const char (&str)[N]) {
-        for (std::size_t i = 0; i < N; ++i) data[i] = str[i];
-    }
-    constexpr std::string_view sv() const { return std::string_view{data, N - 1}; }
-};
-template <std::size_t N, std::size_t M>
-constexpr bool operator==(const fixed_string<N>& a, const fixed_string<M>& b) {
-    if constexpr (N != M) return false;
-    for (std::size_t i = 0; i < N; ++i) if (a.data[i] != b.data[i]) return false;
-    return true;
-}
-
-// Helper tag to pass fixed_string IDs as a type
-// Usage: fs_tag<"name">{}
-template <fixed_string Str>
-struct fs_tag {};
-
-// #define FIXED_STRING()
-
-
-
 
 
 // A dynamic registry with compile-time name-only API via nested mappings
@@ -65,6 +22,9 @@ private:
     std::unordered_map<std::string, void*> m_storage;  // string→void* storage
 
 public:
+    // Quick check whether the registry has any bindings
+    bool empty() const noexcept { return m_storage.empty(); }
+
     // Nested mapping: default unknown names to void
     template<fixed_string Name>
     struct NameToType { using type = void; };
@@ -109,6 +69,8 @@ public:
         return *static_cast<const T*>(it->second);
     }
 
+    
+    
     // Contains with compile-time name only (SFINAE ensures known name)
     template<fixed_string Name>
     auto Contains() const -> std::enable_if_t<
@@ -127,9 +89,34 @@ public:
         return m_storage.erase(key) > 0;
     }
 
+    
+    
+    
+    /* Tag Based API Overload */
+    template<fixed_string Name, typename U>
+    auto Set(id_tag<Name>, U& object) -> std::enable_if_t<        std::is_same_v<typename NameToType<Name>::type, std::remove_const_t<U>>, void>
+    {        this->template Set<Name>(object);}
+
+    template <fixed_string Name>
+    auto& Get(id_tag<Name>) { return this->template Get<Name>(); }
+    
+    template <fixed_string Name>
+    const auto& Get(id_tag<Name>) const { return this->template Get<Name>(); }
+    
+    template<fixed_string Name>
+    auto Contains(id_tag<Name>) const -> std::enable_if_t< !std::is_same_v<typename NameToType<Name>::type, void>, bool>
+    {        return this->template Contains<Name>();}
+
+    template<fixed_string Name>
+    auto Unset(id_tag<Name>) -> std::enable_if_t<!std::is_same_v<typename NameToType<Name>::type, void>, bool>
+    {        return this->template Unset<Name>();   }
+
+
+
+
     // Runtime string API
     template<typename T>
-    void add_named(const std::string& name, T& object) {
+    void set_named(const std::string& name, T& object) {
         m_storage[name] = const_cast<void*>(static_cast<const void*>(&object));
     }
 
@@ -143,7 +130,7 @@ public:
         return m_storage.find(name) != m_storage.end();
     }
 
-    bool remove_named(const std::string& name) {
+    bool unset_named(const std::string& name) {
         return m_storage.erase(name) > 0;
     }
 };

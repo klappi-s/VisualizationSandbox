@@ -28,7 +28,9 @@ int main(){
     visman.get_registry().Set<"phi">(F3);
     visman.get_registry().Set<"density">(f1);
 
+    
     std::cout << visman.get_registry().Get<"E">().data << std::endl;
+    std::cout << visman.get_registry().Get(id<"E">).data << std::endl;
     std::cout << visman.get_registry().Get<"phi">().data << std::endl;
     std::cout << visman.get_registry().Get<"rho">().data << std::endl;
 

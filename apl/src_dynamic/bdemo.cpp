@@ -16,8 +16,8 @@ int main(){
     int score = 42;
     float health = 100.0f;
 
-    vis.get_registry().add_named("score", score);
-    vis.get_registry().add_named("health", health);
+    vis.get_registry().set_named("score", score);
+    vis.get_registry().set_named("health", health);
 
     if (auto* pScore = vis.get_registry().get_named<int>("score")) {
         std::cout << "score=" << *pScore << "\n";

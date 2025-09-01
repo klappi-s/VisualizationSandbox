@@ -88,9 +88,33 @@ public:
         return m_storage.erase(key) > 0;
     }
 
+
+    
+    /* Tag Based API Overload */
+    template<fixed_string Name, typename U>
+    auto Set(id_tag<Name>, U& object) -> std::enable_if_t<        std::is_same_v<typename NameToType<Name>::type, std::remove_const_t<U>>, void>
+    {        this->template Set<Name>(object);}
+
+    template <fixed_string Name>
+    auto& Get(id_tag<Name>) { return this->template Get<Name>(); }
+    
+    template <fixed_string Name>
+    const auto& Get(id_tag<Name>) const { return this->template Get<Name>(); }
+    
+    template<fixed_string Name>
+    auto Contains(id_tag<Name>) const -> std::enable_if_t< !std::is_same_v<typename NameToType<Name>::type, void>, bool>
+    {        return this->template Contains<Name>();}
+
+    template<fixed_string Name>
+    auto Unset(id_tag<Name>) -> std::enable_if_t<!std::is_same_v<typename NameToType<Name>::type, void>, bool>
+    {        return this->template Unset<Name>();   }
+
+
+
+
     // Runtime string API
     template<typename T>
-    void add_named(const std::string& name, T& object) {
+    void set_named(const std::string& name, T& object) {
         m_storage[name] = const_cast<void*>(static_cast<const void*>(&object));
     }
 
@@ -104,7 +128,7 @@ public:
         return m_storage.find(name) != m_storage.end();
     }
 
-    bool remove_named(const std::string& name) {
+    bool unset_named(const std::string& name) {
         return m_storage.erase(name) > 0;
     }
 };

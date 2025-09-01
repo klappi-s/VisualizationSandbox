@@ -1,30 +1,29 @@
 #pragma once
 #include <iostream>
+#include <cstddef>
+#include <stdexcept>
 #include "VisRegistry.h"
 
 // Forward declaration to avoid circular include with bpl.h
 namespace bpl { extern RegistryDynamic reg_g; }
 
+// Forward declare fixed_string for NTTP usage in this header
+template <std::size_t N>
+struct fixed_string;
 
 /*  again problem with base class pointer virtual function auto and child member methods */
 // class VisAdaptorBase{
 // std::unique_ptr<RegistryBase> registry;
 
-
-// ...existing code...
-
 /*  if we can implement a hybird version we can implement a purely dynamic non templated version ... */
-
 
 class VisAdaptorBase{
     using registry_t = RegistryDynamic;
     registry_t* registry = nullptr;
     bool owns_registry = false;
-    // std::unique_ptr<RegistryBase> dynamic_registry;
 
 public:
-
-    // Constructor 
+    // Default: own a local registry
     VisAdaptorBase(){
         registry = new registry_t();
         owns_registry = true;
@@ -37,7 +36,7 @@ public:
         }
     }
 
-    // Initialize to use the global registry
+    // Switch adaptor to use the global registry instance
     void init_global(){
         if (registry == &bpl::reg_g) return;
         if (owns_registry && registry){
@@ -50,38 +49,24 @@ public:
         owns_registry = false;
     }
 
-    // Late bind by compile-time ID
-    template<fixed_string IdV, typename U>
-    void add(U& obj) { registry->template Set<IdV>(obj); }
+    // Access the underlying registry (operate directly on it)
+    registry_t& get_registry() {
+        if (!registry) throw std::logic_error("VisAdaptorBase: registry is null");
+        return *registry;
+    }
+    const registry_t& get_registry() const {
+        if (!registry) throw std::logic_error("VisAdaptorBase: registry is null");
+        return *registry;
+    }
 
-    // Retrieve and check
-    template<fixed_string IdV>
-    auto& get() const { return registry->template Get<IdV>(); }
+    // Convenience: allow binding by compile-time ID via the adaptor (lifecycle-only)
+    template<auto IdV, typename U>
+    void add(U& obj) { get_registry().template Set<IdV>(obj); }
 
-    template<fixed_string IdV>
-    bool contains() const { return registry->template Contains<IdV>(); }
-
-    // Optional: unset by compile-time ID
-    template<fixed_string IdV>
-    bool remove() { return registry->template Unset<IdV>(); }
-
-    // Backward-compat alias
-    template<fixed_string IdV>
-    auto& get_registry_entry() const { return registry->template Get<IdV>(); }
-
-    // Runtime string API passthroughs
-    template<typename T>
-    void add_named(const std::string& name, T& object) { registry->add_named(name, object); }
-
-    template<typename T>
-    T* get_named(const std::string& name) const { return registry->get_named<T>(name); }
-
-    bool contains_named(const std::string& name) const { return registry->contains_named(name); }
-
-    bool remove_named(const std::string& name) { return registry->remove_named(name); }
+    // Note: Forwarding helpers for get/contains/remove and runtime string API
+    // were removed. Use get_registry().Get/Contains/Unset and
+    // get_registry().add_named/get_named/contains_named/remove_named instead.
 };
-
-// ...existing code...
 
 
 

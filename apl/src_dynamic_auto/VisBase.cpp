@@ -1,6 +1,32 @@
-#include "VisRegistry.h"
+/* #include "VisRegistry.h"
+#include "VisBase.h"
 
+// Define the global registry and adaptor instances for src_dynamic_auto
+namespace bpl {
+    RegistryDynamic reg_g;          // NOLINT(cert-err58-cpp)
+    VisAdaptorBase visman_g;        // default-constructed with local registry
+}
+
+// Ensure the adaptor uses the global registry. This runs at program start in this TU.
+struct VisAutoInitGlobalRegistry {
+    VisAutoInitGlobalRegistry() {
+        try {
+            bpl::visman_g.init_global();
+        } catch (const std::exception& e) {
+            std::cerr << "[VisAutoInitGlobalRegistry] init_global failed: " << e.what() << std::endl;
+        }
+    }
+};
 // Provide a single definition for the global dynamic registry
+static VisAutoInitGlobalRegistry g_vis_auto_init;
+
+ */
+
+
+
+
+
+
 
 
 // #include "VisBase.h"

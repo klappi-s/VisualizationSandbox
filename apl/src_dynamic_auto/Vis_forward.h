@@ -3,6 +3,7 @@
 
 #include <any>
 #include <array>
+#include <cstddef>
 
 
 #include <cassert>
@@ -27,6 +28,31 @@
 #include <unordered_set>
 
 
+
+
+// Compile-time string literal wrapper (C++20 NTTP) used as IDs.
+template <std::size_t N>
+struct fixed_string {
+    char data[N]{};
+    constexpr fixed_string(const char (&str)[N]) {
+        for (std::size_t i = 0; i < N; ++i) data[i] = str[i];
+    }
+    constexpr std::string_view sv() const { return std::string_view{data, N - 1}; }
+};
+
+template <std::size_t N, std::size_t M>
+constexpr bool operator==(const fixed_string<N>& a, const fixed_string<M>& b) {
+    if constexpr (N != M) return false;
+    for (std::size_t i = 0; i < N; ++i) if (a.data[i] != b.data[i]) return false;
+    return true;
+}
+
+// Helper tag to pass fixed_string IDs as a type. Usage: id<"name">
+template <fixed_string Id>
+struct id_tag { static constexpr auto value = Id; };
+
+template <fixed_string Id>
+inline constexpr id_tag<Id> id{};
 
 
 

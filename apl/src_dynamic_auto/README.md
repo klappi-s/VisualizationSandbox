@@ -24,7 +24,6 @@ Status
 ---
 
 ## Variants overview
-- `src_static`: compile-time/static registry. Types and dimensions encoded in templates; shared ownership and accessor parity.
 - `src_dynamic`: runtime map-based registry with compile-time ID→type mapping and runtime string API.
 - `src_dynamic_auto`: dynamic registry with auto-registration hooks (this module).
 - `src_fluent`: compile-time fluent/builder adaptor over a typed registry; shared ownership and fluent adds.

@@ -35,15 +35,15 @@ class Field : public Field_b{
     Field(std::string name);
     Field(std::string name, T v);
 
-    // Auto-registering constructor: Field<...> f{ fs_tag<"name">{} };
+    // Auto-registering constructor: Field<...> f{ id<"name"> };
     template <fixed_string Id,
               typename Self = Field<T, Dim>,
               typename = std::enable_if_t<
                   std::is_same_v<typename RegistryDynamic::NameToType<Id>::type, Self>
               >>
-    explicit Field(fs_tag<Id>) {
+    explicit Field(id_tag<Id>) {
         field_ID = std::string(Id.sv());
-        bpl::reg_g.template Set<Id>(*this);
+        bpl::registry_g.template Set<Id>(*this);
         fill_with_random(data);
         std::cout << "creating field container (auto-registered as '" << field_ID << "')" << std::endl;
     }
