@@ -10,28 +10,28 @@ REGDYN_REGISTER_NAME_TYPE("density", Field<double, 1>);
 
 
 int main(){
-    VisAdaptorBase vis;
+    VisAdaptorBase vis(std::make_shared<RegistryDynamic>());
 
     // Runtime string API demo
     int score = 42;
     float health = 100.0f;
 
-    vis.add_named("score", score);
-    vis.add_named("health", health);
+    vis.get_registry().add_named("score", score);
+    vis.get_registry().add_named("health", health);
 
-    if (auto* pScore = vis.get_named<int>("score")) {
+    if (auto* pScore = vis.get_registry().get_named<int>("score")) {
         std::cout << "score=" << *pScore << "\n";
     }
-    if (auto* pHealth = vis.get_named<float>("health")) {
+    if (auto* pHealth = vis.get_registry().get_named<float>("health")) {
         std::cout << "health=" << *pHealth << "\n";
     }
 
     // Compile-time API demo (uses registered IDs)
     Field<double, 1> density;
-    vis.add<"density">(density);
-    std::cout << "density bound: " << vis.contains<"density">() << "\n";
-    vis.remove<"density">();
-    std::cout << "density after remove: " << vis.contains<"density">() << "\n";
+    vis.get_registry().Set<"density">(density);
+    std::cout << "density bound: " << vis.get_registry().Contains<"density">() << "\n";
+    vis.get_registry().Unset<"density">();
+    std::cout << "density after remove: " << vis.get_registry().Contains<"density">() << "\n";
 
     return 0;
 }

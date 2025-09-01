@@ -23,6 +23,9 @@ private:
     std::unordered_map<std::string, void*> m_storage;  // string→void* storage
 
 public:
+    // Quick check whether the registry has any bindings
+    bool empty() const noexcept { return m_storage.empty(); }
+
     // Nested mapping: default unknown names to void
     template<fixed_string Name>
     struct NameToType { using type = void; };
@@ -109,9 +112,5 @@ public:
 // Macro to register name→type for this handler (must be at namespace scope)
 #define REGDYN_REGISTER_NAME_TYPE(name_lit, ...) \
     template<> struct RegistryDynamic::NameToType<fixed_string{name_lit}> { using type = __VA_ARGS__; }
-
-
-
-
 
 

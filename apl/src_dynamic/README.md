@@ -1,7 +1,7 @@
 # APL: src_dynamic — Runtime registry (late-bound by compile-time IDs)
 
 ## Overview
-Minimal dynamic registry that binds compile-time string IDs to runtime objects with type safety. Also exposes a flexible runtime string API. The thin, non-templated `VisAdaptorBase` owns the registry and forwards calls.
+Minimal dynamic registry that binds compile-time string IDs to runtime objects with type safety. Also exposes a flexible runtime string API. The thin `VisAdaptorBase` now only manages/holds a registry pointer; use `get_registry()` to operate on the registry.
 
 ## Registry design
 - Map-based storage: `std::unordered_map<std::string, void*>`.
@@ -11,7 +11,7 @@ Minimal dynamic registry that binds compile-time string IDs to runtime objects w
 
 ## Files
 - `Vis_forward.h`, `field.h`, `particle.h`
-- `VisRegistry.h` (RegistryDynamic), `VisBase.h` (facade)
+- `VisRegistry.h` (RegistryDynamic), `VisBase.h` (adaptor)
 - `amain.cpp`, `bdemo.cpp`, `Makefile`
 
 ## Build & Run
@@ -32,53 +32,36 @@ REGDYN_REGISTER_NAME_TYPE("phi",     Field<vec<double,1>, 1>);
 
 These inform the registry which type each compile-time ID refers to.
 
-## VisAdaptorBase API (facade over RegistryDynamic)
-Ownership
-- Holds `std::shared_ptr<RegistryDynamic>`
+## VisAdaptorBase (lifecycle only)
+Ownership/Access
+- Holds `std::shared_ptr<RegistryDynamic>` which may be null by default.
+- Constructors:
+  - `VisAdaptorBase()` — default constructs with nullptr.
+  - `explicit VisAdaptorBase(std::shared_ptr<RegistryDynamic>)` — inject an existing registry (must be non-null).
 - Accessors:
-  - `registry_t& get_registry()`
-  - `const registry_t& get_registry() const`
-  - `std::shared_ptr<registry_t> get_registry_ptr() const`
+  - `registry_t& get_registry()` / `const registry_t& get_registry() const` — dereference the current registry (must be non-null).
+  - `std::shared_ptr<registry_t> get_registry_ptr() const` — retrieve the shared pointer.
+- Reset:
+  - `reset_registry(std::shared_ptr<RegistryDynamic>)` — replace held registry, warning if the previous one was non-empty.
+  - `reset_registry(std::unique_ptr<RegistryDynamic>)` — promoted to shared and replaced with the same warning.
 
-Compile-time ID API (type-checked via NameToType)
-- `add<"ID">(obj)` — late-bind by reference (aliases registry `Set`)
-- `get<"ID">() -> T&`
-- `contains<"ID">() -> bool`
-- `remove<"ID">() -> bool` — unset by ID
-
-Runtime string API
-- `add_named(name, obj)`
-- `get_named<T>(name) -> T*` (nullptr if absent)
-- `contains_named(name) -> bool`
-- `remove_named(name) -> bool`
+Note: No forwarding helpers like `add/get/contains` on the adaptor; operate directly on the registry via `get_registry()`.
 
 ## Examples
-Compile-time API (type-checked)
+Operate directly on the registry
 ```cpp
-VisAdaptorBase vis;
-Field<double, 1> density;
-vis.add<"density">(density);
-std::cout << vis.get<"density">().data << "\n";
-```
+VisAdaptorBase vis(std::make_shared<RegistryDynamic>());
+auto& reg = vis.get_registry();
 
-Runtime string API (flexible)
-```cpp
-VisAdaptorBase vis;
+Field<double, 1> density;
+reg.template Set<"density">(density);
+std::cout << reg.template Get<"density">().data << "\n";
+
 int score = 42;
-vis.add_named("score", score);
-if (auto* s = vis.get_named<int>("score")) {
+reg.add_named("score", score);
+if (auto* s = reg.get_named<int>("score")) {
     std::cout << *s << "\n";
 }
-```
-
-Access the underlying registry
-```cpp
-auto& reg = vis.get_registry();              // reference
-auto reg_ptr = vis.get_registry_ptr();       // shared_ptr if you need to share it
-
-// direct compile-time calls on the registry
-reg.template Set<"density">(density);
-auto& d = reg.template Get<"density">();
 ```
 
 ## Provided types
@@ -89,7 +72,6 @@ auto& d = reg.template Get<"density">();
 ---
 
 ## Variants overview
-- `src_static`: compile-time/static registry (typed). Shared registry ownership; maximal static safety.
-- `src_fluent`: compile-time fluent/builder adaptor built over a typed registry; shared ownership, ergonomic `.add<...>()` chaining.
+- `src_fluent`: compile-time fluent/builder adaptor built over a typed registry; shared ownership, ergonomic chaining.
 - `src_dynamic`: this module — dynamic, map-based late binding with compile-time ID→type mapping.
 - `src_dynamic_auto`: dynamic registry with auto-registration hooks and helpers (see that folder for details).

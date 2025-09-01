@@ -1,28 +1,28 @@
 #pragma once
 #include "bpl.h"
 
-
-
-/*  again problem with base class pointer virtual function auto and child member methods */
-// class VisAdaptorBase{
-// std::unique_ptr<RegistryBase> registry;
-
-
-// ...existing code...
-
-/*  if we can implement a hybird version we can implement a purely dynamic non templated version ... */
-
-
 class VisAdaptorBase{
     using registry_t = RegistryDynamic;
-    std::shared_ptr<registry_t> registry;
-    // std::unique_ptr<RegistryBase> dynamic_registry;
+    std::shared_ptr<registry_t> registry; // may be null until provided
 
 public:
+    // Default: no registry owned (nullptr)
+    VisAdaptorBase() = default;
 
-    // Constructor 
-    VisAdaptorBase(){
-        registry = std::make_shared<registry_t>();
+    // Construct with an existing shared registry instance
+    explicit VisAdaptorBase(std::shared_ptr<registry_t> reg) {
+        if (!reg) {
+            throw std::invalid_argument("VisAdaptorBase: reg must not be null");
+        }
+        registry = std::move(reg);
+    }
+
+    // Construct with a unique_ptr registry and take ownership by promoting to shared_ptr
+    explicit VisAdaptorBase(std::unique_ptr<registry_t>&& reg) {
+        if (!reg) {
+            throw std::invalid_argument("VisAdaptorBase: reg must not be null");
+        }
+        registry = std::shared_ptr<registry_t>(std::move(reg));
     }
 
     // Accessors to the underlying registry
@@ -30,35 +30,31 @@ public:
     const registry_t& get_registry() const noexcept { return *registry; }
     std::shared_ptr<registry_t> get_registry_ptr() const noexcept { return registry; }
 
-    // Late bind by compile-time ID
-    template<fixed_string IdV, typename U>
-    void add(U& obj) { registry->template Set<IdV>(obj); }
+    // Reset/replace the underlying registry instance.
+    // Warn if the current registry contains bindings before replacement.
+    void reset_registry(std::shared_ptr<registry_t> new_registry) {
+        if (!new_registry) {
+            throw std::invalid_argument("reset_registry: new_registry must not be null");
+        }
+        if (registry && !registry->empty()) {
+            std::cerr << "[VisAdaptorBase] Warning: replacing a non-empty registry" << std::endl;
+        }
+        registry = std::move(new_registry);
+    }
 
-    // Retrieve and check
-    template<fixed_string IdV>
-    auto& get() const { return registry->template Get<IdV>(); }
+    // Overload: accept unique_ptr and take ownership by promoting to shared_ptr
+    void reset_registry(std::unique_ptr<registry_t> new_registry) {
+        if (!new_registry) {
+            throw std::invalid_argument("reset_registry: new_registry must not be null");
+        }
+        if (registry && !registry->empty()) {
+            std::cerr << "[VisAdaptorBase] Warning: replacing a non-empty registry" << std::endl;
+        }
+        registry = std::shared_ptr<registry_t>(std::move(new_registry));
+    }
 
-    template<fixed_string IdV>
-    bool contains() const { return registry->template Contains<IdV>(); }
-
-    // Optional: unset by compile-time ID
-    template<fixed_string IdV>
-    bool remove() { return registry->template Unset<IdV>(); }
-
-
-    // Runtime string API passthroughs
-    template<typename T>
-    void add_named(const std::string& name, T& object) { registry->add_named(name, object); }
-
-    template<typename T>
-    T* get_named(const std::string& name) const { return registry->get_named<T>(name); }
-
-    bool contains_named(const std::string& name) const { return registry->contains_named(name); }
-
-    bool remove_named(const std::string& name) { return registry->remove_named(name); }
+    // No facade mutators: operate via get_registry() directly.
 };
-
-// ...existing code...
 
 
 

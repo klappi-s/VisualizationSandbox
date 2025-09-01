@@ -19,25 +19,46 @@ int main(){
     Field<double, 1> f2;
     Field<double, 1> f3;
 
-    VisAdaptorBase visman; // dynamic, name-only registry
+    // Construct adaptor with an explicit registry instance
+    VisAdaptorBase visman(std::make_shared<RegistryDynamic>());
 
-    // Bind entries (late binding allowed)
-    visman.add<"E">(f1);
-    visman.add<"rho">(F2);
-    visman.add<"phi">(F3);
-    visman.add<"density">(f1);
+    // Bind entries (late binding allowed) via the registry
+    visman.get_registry().Set<"E">(f1);
+    visman.get_registry().Set<"rho">(F2);
+    visman.get_registry().Set<"phi">(F3);
+    visman.get_registry().Set<"density">(f1);
 
-    std::cout << visman.get<"E">().data << std::endl;
-    std::cout << visman.get<"phi">().data << std::endl;
-    std::cout << visman.get<"rho">().data << std::endl;
+    std::cout << visman.get_registry().Get<"E">().data << std::endl;
+    std::cout << visman.get_registry().Get<"phi">().data << std::endl;
+    std::cout << visman.get_registry().Get<"rho">().data << std::endl;
 
-    std::cout << "density" << visman.get<"density">().data << std::endl;
+    std::cout << "density" << visman.get_registry().Get<"density">().data << std::endl;
 
-    visman.add<"density">(f2); // rebind
+    // rebind
+    visman.get_registry().Set<"density">(f2);
     std::cout << "f1" << f1.data << std::endl;
     std::cout << "f2" << f2.data << std::endl;
 
-    std::cout << "density" << visman.get<"density">().data << std::endl;
+    std::cout << "density" << visman.get_registry().Get<"density">().data << std::endl;
+
+    // Demonstrate reset with shared_ptr (warns because current registry is non-empty)
+    std::cout << "-- reset with shared_ptr --\n";
+    visman.reset_registry(std::make_shared<RegistryDynamic>());
+    // Rebind after reset
+    visman.get_registry().Set<"E">(f1);
+    std::cout << visman.get_registry().Get<"E">().data << std::endl;
+
+    // Demonstrate reset with unique_ptr (also warns if non-empty)
+    std::cout << "-- reset with unique_ptr --\n";
+    visman.reset_registry(std::make_unique<RegistryDynamic>());
+    visman.get_registry().Set<"rho">(F2);
+    std::cout << visman.get_registry().Get<"rho">().data << std::endl;
+
+    // Demonstrate constructor with unique_ptr promoted to shared_ptr
+    std::cout << "-- construct with unique_ptr --\n";
+    VisAdaptorBase vis_uni(std::make_unique<RegistryDynamic>());
+    vis_uni.get_registry().Set<"phi">(F3);
+    std::cout << vis_uni.get_registry().Get<"phi">().data << std::endl;
 
     return 0;
 }
