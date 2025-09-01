@@ -2,20 +2,21 @@
 
 #include "Vis_forward.h"
 #include "VisRegistry.h"
-#include "VisBase.h"  // bring in VisAdaptorBase definition
-
-#include "particle.h"
-#include "field.h"
 
 namespace bpl {
+    RegistryDynamic registry_g;
+     
     // extern 
-    RegistryDynamic registry_g; 
     // extern
-    VisAdaptorBase visman_g;   
+    // VisAdaptorBase visman_g;   
     
     // // Initialization of visman_g to use the global registry is done in VisBase.cpp
 }
 
-// defined in a .cpp
-// defined in a .cpp
+
+
+#include "VisBase.h"  // bring in VisAdaptorBase definition
+#include "particle.h"
+#include "field.h"
+
 

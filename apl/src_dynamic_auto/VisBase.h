@@ -1,8 +1,5 @@
 #pragma once
-#include <iostream>
-#include <cstddef>
-#include <stdexcept>
-#include "VisRegistry.h"
+#include "bpl.h"
 
 // Forward declaration to avoid circular include with bpl.h
 namespace bpl { extern RegistryDynamic reg_g; }
@@ -38,14 +35,14 @@ public:
 
     // Switch adaptor to use the global registry instance
     void init_global(){
-        if (registry == &bpl::reg_g) return;
+        if (registry == &bpl::registry_g) return;
         if (owns_registry && registry){
             std::cerr << "[VisAdaptorBase] Warning: switching to global registry; disposing of local registry" << std::endl;
             delete registry;
         } else {
             std::cerr << "[VisAdaptorBase] Warning: switching to global registry" << std::endl;
         }
-        registry = &bpl::reg_g;
+        registry = &bpl::registry_g;
         owns_registry = false;
     }
 

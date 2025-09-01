@@ -1,10 +1,7 @@
 #pragma once
 
-#include "Vis_forward.h"
+#include "bpl.h"
 
-#include <string>
-#include <unordered_map>
-#include <stdexcept>
 
 
 class RegistryBase{
@@ -17,6 +14,8 @@ class RegistryBase{
 
 
 // A dynamic registry with compile-time name-only API via nested mappings
+
+
 class RegistryDynamic : public RegistryBase {
 private:
     std::unordered_map<std::string, void*> m_storage;  // string→void* storage
@@ -134,6 +133,7 @@ public:
         return m_storage.erase(name) > 0;
     }
 };
+
 
 // Macro to register name→type for this handler (must be at namespace scope)
 #define REGDYN_REGISTER_NAME_TYPE(name_lit, ...) \

@@ -11,13 +11,13 @@ REGDYN_REGISTER_NAME_TYPE("density", Field<double, 1>);
 
 int main(){
     
-    VisAdaptorBase& visman(bpl::visman_g);   // defined in a .cpp
-    bpl::visman_g.init_global();
+    // VisAdaptorBase& visman(bpl::visman_g);   // defined in a .cpp
+    // bpl::visman_g.init_global();
 
     
     // Switch manager to the global registry so it sees all auto-registered fields
-    VisAdaptorBase visman; // dynamic, name-only registry (starts with local)
-    visman.init_global();
+    VisAdaptorBase visman_g; // dynamic, name-only registry (starts with local)
+    visman_g.init_global();
 
     
 
@@ -33,22 +33,22 @@ int main(){
 
 
     // Access directly without manual visman.add<...>(...)
-    std::cout <<"fieee E"  << bpl::visman_g.get_registry().template Get<"E">().data << std::endl;
-    std::cout <<"fieee E"  << bpl::visman_g.get_registry().Get<"E">().data << std::endl;
-    std::cout <<"fieee E"  << bpl::visman_g.get_registry().Get(id<"E">).data << std::endl;
+    std::cout <<"fieee E"  << visman_g.get_registry().template Get<"E">().data << std::endl;
+    std::cout <<"fieee E"  << visman_g.get_registry().Get<"E">().data << std::endl;
+    std::cout <<"fieee E"  << visman_g.get_registry().Get(id<"E">).data << std::endl;
     
     
     
     
-    std::cout <<"fieephi"  << bpl::visman_g.get_registry().Get<"phi">().data << std::endl;
-    std::cout <<"fieerho"  << bpl::visman_g.get_registry().Get<"rho">().data << std::endl;
-    std::cout << "density" << bpl::visman_g.get_registry().Get<"density">().data << std::endl;
+    std::cout <<"fieephi"  << visman_g.get_registry().Get<"phi">().data << std::endl;
+    std::cout <<"fieerho"  << visman_g.get_registry().Get<"rho">().data << std::endl;
+    std::cout << "density" << visman_g.get_registry().Get<"density">().data << std::endl;
 
 
 
     // Rebind example: create a new density field and it will overwrite the binding
     Field<double, 1> fdensity2{ id<"density"> }; // rebind on construction
-    std::cout << "density(rebound)" << bpl::visman_g.get_registry().template Get<"density">().data << std::endl;
+    std::cout << "density(rebound)" << visman_g.get_registry().template Get<"density">().data << std::endl;
 
 
     return 0;

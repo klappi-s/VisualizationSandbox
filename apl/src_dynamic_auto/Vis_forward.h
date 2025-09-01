@@ -28,7 +28,15 @@
 #include <unordered_set>
 
 
+#include <iostream>
+#include <cstddef>
+#include <stdexcept>
 
+
+
+#include <string>
+#include <unordered_map>
+#include <stdexcept>
 
 // Compile-time string literal wrapper (C++20 NTTP) used as IDs.
 template <std::size_t N>
@@ -245,10 +253,8 @@ class VisAdaptorBase; // was: template <typename... Slots> class VisAdaptorBase;
 
 class RegistryBase;
 
-class RegistryImmutable;
+class RegistryDynamic;
 
-template<typename T, unsigned Dim, unsigned VDim>
-class VisRegistry ;
 
 template<typename T, unsigned Dim>
 class ParticleBase;
