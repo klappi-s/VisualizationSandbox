@@ -18,9 +18,10 @@ class VisAdaptorBase{
     template <typename SlotT, typename Next>
     void clone_one(Next& next) const {
         constexpr auto Id = SlotT::Id;
-        if (this->template contains<Id>()) {
-            // note: SetPtr now takes a templated pointer type
-            next.template set_ptr<Id>(&this->template get<Id>());
+        // Rebind into the next adaptor using the underlying registry API
+        if (this->get_registry().template Contains<Id>()) {
+            auto& ref = this->get_registry().template Get<Id>();
+            next.get_registry().template SetPtr<Id>(&ref);
         }
     }
 
@@ -80,42 +81,11 @@ public:
             NextAdaptor next;  // starts with an empty registry
             // carry over current bindings
             this->clone_into(next, std::make_index_sequence<sizeof...(Slots)>{});
-            // bind the new one
-            next.template set<IdV>(obj);
+            // bind the new one via the registry API
+            next.get_registry().template Set<IdV>(obj);
             return next;
         }
     }
-
-    template<fixed_string IdV, typename U>
-    void set(U& obj) { registry->template Set<IdV>(obj); }
-
-    template<fixed_string IdV, typename T>
-    void set_ptr(T* ptr) { registry->template SetPtr<IdV>(ptr); }
-
-    template<fixed_string IdV>
-    auto& get() const { return registry->template Get<IdV>(); }
-
-    template<fixed_string IdV>
-    bool contains() const { return registry->template Contains<IdV>(); }
-
-    template<fixed_string IdV>
-    void unset() { registry->template Unset<IdV>(); }
-
-    // Tag-based overloads to avoid needing 'template' at call sites
-    template<fixed_string IdV>
-    auto& get(id_tag<IdV>) const { return registry->template Get<IdV>(); }
-
-    template<fixed_string IdV>
-    bool contains(id_tag<IdV>) const { return registry->template Contains<IdV>(); }
-
-    template<fixed_string IdV, typename U>
-    void set(id_tag<IdV>, U& obj) { registry->template Set<IdV>(obj); }
-
-    template<fixed_string IdV, typename T>
-    void set_ptr(id_tag<IdV>, T* ptr) { registry->template SetPtr<IdV>(ptr); }
-
-    template<fixed_string IdV>
-    void unset(id_tag<IdV>) { registry->template Unset<IdV>(); }
 };
 
 // Convenience Factory (same as src_static)

@@ -32,10 +32,10 @@ int main(){
         .add<"rho2">(frho)
         .add<"phi">(fphi);
 
-    auto reg = vis.get_registry();
+    auto& reg = vis.get_registry();
     
-    std::cout << vis.get<"E">().data << std::endl;
-    std::cout << vis.get(id<"E">).data << std::endl;  
+    std::cout << reg.Get<"E">().data << std::endl;
+    std::cout << reg.Get(id<"E">).data << std::endl;  
 
     std::cout << reg.Get<"E">().data << std::endl;    
     std::cout << reg.Get(id<"E">).data << std::endl;  
@@ -44,9 +44,9 @@ int main(){
 
 
     // Use compile-time gets
-    std::cout << vis.get<"E2">().data << std::endl;
-    std::cout << vis.template get<"rho">().data << std::endl;
-    std::cout << vis.template get<"phi">().data << std::endl;
+    std::cout << reg.Get<"E2">().data << std::endl;
+    std::cout << reg.Get(id<"rho">).data << std::endl;
+    std::cout << reg.Get(id<"phi">).data << std::endl;
 
 
 
@@ -62,11 +62,11 @@ int main(){
     VisAdaptorBase<> v0;
     auto v1 = std::move(v0).add<"density">(f1);
 
-    std::cout << "density: " << v1.template get<"density">().data << "\n";
+    std::cout << "density: " << v1.get_registry().template Get<"density">().data << "\n";
 
     // Adding another density would create a different compile-time slot; typically you use unique IDs
     auto v2 = std::move(v1); // just move, keep same slots
-    v2.template set<"density">(f2); // rebind same slot
-    std::cout << "density rebound: " << v2.template get<"density">().data << "\n";
+    v2.get_registry().template Set<"density">(f2); // rebind same slot
+    std::cout << "density rebound: " << v2.get_registry().template Get<"density">().data << "\n";
     return 0;
 }
