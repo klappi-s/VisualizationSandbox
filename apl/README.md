@@ -7,7 +7,7 @@ This repository contains experiments around an IPPL-like layout to explore how t
 APL provides a registry plus a thin adaptor that visualization code can use to discover and access fields and particle containers. The adaptor holds a smart pointer to a registry instance; other adaptor variants can build on the same base.
 
 ## Quick start (for all APL variants)
-From any `apl/src_*` folder:
+From any `apl/src_*` folder (e.g., `src_fluent`, `src_dynamic`, `src_dynamic_auto`):
 - Build amain demo: `make amain` or `make`
 - Run amain demo: `make run_amain`
 - Build bdemo: `make bdemo`
@@ -17,43 +17,51 @@ Notes:
 - The Registry does the main lifting; `VisAdaptorBase` is a facade that holds a smart pointer to a registry instance. Future adaptor variants can inherit from this base.
 - Facade-style operators that manage the underlying Registry via the adaptor are optional.
 
-## src_static
-### RegistryTyped 
+## src_fluent — Compile-time typed registry with a fluent adaptor
 
-- Approach: Compile-time/static registry. Types and dimensions are encoded in the type system (templates). Visitors and dispatch are resolved at compile time.
+A compile-time/static registry where types and dimensions are encoded in the type system (templates). Adds a fluent/builder-style adaptor so you can start empty and accumulate slots ergonomically while preserving static guarantees.
+
+### Registry (compile-time typed)
+- Approach: Compile-time registry with ID→slot mapping resolved at compile time. Visitors and dispatch are resolved statically.
 - Pros: Zero/low runtime overhead, maximal type safety.
-- Cons: Adding new types requires recompilation; less flexible for plugins/runtime extension.
+- Cons: Adding new IDs/types requires recompilation; less flexible for plugins/runtime extension.
 
-Template: `template <typename... Slots> class RegistryTyped` where each slot is `Slot<Id, T>`.
+Template model
+- Slots encode compile-time string IDs and their bound types: `Slot<Id, T>`.
+- The registry is a templated type over its slots (see `VisRegistry.h`).
 
 Construction
 - Factories (helpers):
-  - `MakeRegistry<Ids...>(objs...) -> std::unique_ptr<RegistryTyped<Slot<Ids, std::remove_reference_t<Ts>>...>>`
+  - `MakeRegistry<Ids...>(objs...) -> std::unique_ptr<RegistryFluent<Slot<Ids, std::remove_reference_t<Ts>>...>>`
     - Binds each `Id` to the address of the corresponding `obj`.
-    
+
 Operations
 - `Get<Id>() -> T&`
   - Returns a reference to the bound object. Throws if not bound.
-- `Set<Id>(U& obj)`
+- `Set<Id>(U& obj)` / `set(id<Id>, obj)`
   - Late-binds/rebinds by reference. Statically checks that `U` matches the slot type `T`.
-- `Contains<Id>() -> bool`
+- `Contains<Id>() -> bool` / `contains(id<Id>)`
   - True if the slot is currently bound (non-null pointer).
-- `Unset<Id>()`
+- `Unset<Id>()` / `unset(id<Id>)`
   - Removes a binding for the given Id.
 
 Notes
 - Internally stores raw pointers to user-owned objects.
 - Strong compile-time checks: unknown Ids trigger `static_assert`.
-- `field.h`, `particle.h`: demo data types.
+- `field.h`, `particle.h` provide demo data types.
 
-### VisAdaptorBase
-- `get`/`set`/`contains`/`unset` mirror the underlying registry operations.
-- `get_registry()` returns a reference to the underlying registry. Throws if not bound.
-- You can create a visualization adaptor directly with a factory helper (similar to the registry factory). It creates the underlying registry:
-  `MakeVisAdaptor<Ids...>(Ts&... objs) -> VisAdaptorBase<Slot<Ids, std::remove_reference_t<Ts>>...>` 
-- Or construct from an existing smart pointer to a registry with shared ownership: `VisAdaptorBase` holds `std::shared_ptr<RegistryTyped<...>>`, can be constructed from an existing `shared_ptr` or promoted from a `unique_ptr`.
+### VisAdaptorBase (fluent builder over the registry)
+- Holds `std::shared_ptr` to the underlying registry type.
+- Use `get_registry()` to call the full registry API directly: `get_registry().template Get<"ID">()`, `Set`, `Contains`, `Unset` (including tag-based overloads on the registry).
+- Factories for adaptors:
+  - `MakeVisAdaptor<Ids...>(Ts&... objs) -> VisAdaptorBase<Slot<Ids, std::remove_reference_t<Ts>>...>`
+  - Or construct from an existing smart pointer to a registry with shared ownership: construct from `shared_ptr` or promote from a `unique_ptr`.
+- Fluent accumulation:
+  - Start empty with `VisAdaptorBase<>` and accumulate via `.add<"ID">(obj)` which returns a new adaptor type that includes the new slot. Note: `add` is rvalue-qualified; call as `std::move(vis).add<...>(obj)` or use helpers.
+- Tag-based convenience:
+  - Use `id<"density">` with the registry: `get_registry().Get(id<...>)`.
 
-#### Adaptor and Registry Example Usage
+#### Example usage
 ```cpp
 // Create data
 Field<vec<double,3>, 3> F1;
@@ -66,74 +74,32 @@ auto vis = MakeVisAdaptor<"E","rho","phi","density">(F1, F2, F3, f1);
 auto& reg = vis.get_registry();
 
 // Access via registry reference
-auto E = reg.Get<"E">();
+auto& E = reg.Get<"E">();
 
-// Or access through the adaptor
-auto rho = vis.get<"rho">();
+// Access another entry via the registry
+auto& rho = reg.Get<"rho">();
 
-// Late bind/overwrite
-vis.set<"density">(f2);
+// Late bind/overwrite via the registry
+reg.Set<"density">(f2);
 
 // Build adaptor from an existing registry
 auto reg2 = MakeRegistry<"E","rho">(F1, F2);      // unique_ptr
-auto vis2 = MakeVisAdaptor(reg2);                 // promoted to shared_ptr
-auto E2 = vis2.get<"E">();
-```
+auto vis2 = MakeVisAdaptor(reg2);                    // promoted to shared_ptr
+auto& E2 = vis2.get_registry().template Get<"E">();
 
-## src_fluent
-A fluent, compile-time adaptor/registry variant. Mirrors `src_static` layout and APIs. You can start completely empty with `VisAdaptorBase<>` or with a factory helper. Use `MakeRegistry<Ids...>(objs...)` and later accumulate more slots via `add<"ID">(obj)` which returns a new adaptor type.
-
-Usage examples
-- Start empty and add slots fluently:
-```cpp
-VisAdaptorBase<> vis;
-Field<double,1> rho;
-auto vis2 = std::move(vis).add<"density">(rho);
-std::cout << vis2.get<"density">().data << "\n";
-```
-- Macro helper: `VIS_REBIND` enables accumulating under effectively the same identifier in the following scope (not ideal):
-```cpp
-Field<double, 1> f1, f2;
+// Start empty and add slots fluently
 VisAdaptorBase<> v0;
+Field<double,1> rho_f;
+auto v1 = std::move(v0).add<"density">(rho_f);
+std::cout << v1.get_registry().template Get<"density">().data << "\n";
 
-// Normally you need to change the adaptor name...
-auto v1 = std::move(v0).add<"density">(f1);
-
-// Not possible due to change in object type etc
-v1 = std::move(v1).add<"density1">(f2);
-
-// But instead the macro enables (not sure how useful):
-v1 = VIS_REBIND(v1, "density2", f2){
-  auto d2 = v1.get<"density2">();
-}
+// Tag-based API on the registry
+std::cout << vis.get_registry().Get(id<"E">).data << std::endl;
+std::cout << reg.Get(id<"E">).data << std::endl;
 ```
-- Added id-tag struct for alternative data retrieval:
-```cpp
-...
-auto vis = MakeVisAdaptor<"E","rho","phi","density">(f3, F2, F3, f1);
-/* alternative overwrite .. */
-vis.set(id<"density">, f2);
-
-auto reg = vis.get_registry();
-
-std::cout << vis.get<"E">().data << std::endl;
-std::cout << vis.get(id<"E">).data << std::endl;  
-std::cout << reg.Get<"E">().data << std::endl;    
-std::cout << reg.Get(id<"E">).data << std::endl;  
-```
-
-Notes
-- `add<"ID">` warns and is a no-op when the ID already exists in the adaptor type.
-- `set<"ID">` warns on rebinding and rebinds the pointer.
 
 ## src_dynamic 
 Dynamic, type-safe registry and adaptor
-<!-- 
-Attempt more dynamic name-to-type mapping.
-  - Approach: Runtime/type-erased registry. Stores base pointers (Field_b*, ParticleBase_b*) plus parallel type metadata: (type_hash, dim, vdim, is_vector, scalar_type_hash). Lookup by string ID. Visitors use a runtime scalar hash combined with a compile-time supported_types tuple to dispatch.
-  - Pros: Flexible, easy to extend at runtime, simple lookup by ID.
-  - Cons: Some runtime cost; relies on stored metadata correctness.
- -->
 
 This module provides a minimal, type-safe registry that binds compile-time string IDs to concrete C++ types, plus a small facade (`VisAdaptorBase`) for easy use. It supports both compile-time (name-only) and runtime string APIs.
 
@@ -173,22 +139,10 @@ Runtime string API:
 - `contains_named(name) -> bool`
 - `remove_named(name) -> bool`
 
-### VisAdaptorBase API (facade with a smart-pointer registry instance)
-- `get_registry()`
-
-Compile-time name-only API (requires registration):
-- `add<"ID">(obj)`
-- `get<"ID">() -> T&`
-- `contains<"ID">() -> bool`
-- `remove<"ID">() -> bool`
-
-Runtime string API:
-- `add_named(name, obj)`
-- `get_named<T>(name) -> T*` (nullptr if absent or wrong type)
-- `contains_named(name) -> bool`
-- `remove_named(name) -> bool`
-
-Support for visitor patterns can be added for both runtime and compile-time APIs.
+### VisAdaptorBase API (lifecycle-only facade)
+- Holds a shared_ptr to a `RegistryDynamic` instance but does not forward registry operations.
+- Use `get_registry()` to access the registry and call its API directly.
+- You may keep a convenience `add<"ID">(obj)` on the adaptor.
 
 ### Examples
 Compile-time API (type-checked):
@@ -196,15 +150,15 @@ Compile-time API (type-checked):
 VisAdaptorBase vis;
 Field<double, 1> density;
 vis.add<"density">(density);
-std::cout << vis.get<"density">().data << "\n"; 
+std::cout << vis.get_registry().template Get<"density">().data << "\n";
 ```
 
 Runtime string API (flexible):
 ```cpp
 VisAdaptorBase vis;
 int score = 42;
-vis.add_named("score", score);
-if (auto* s = vis.get_named<int>("score")) {
+vis.get_registry().add_named("score", score);
+if (auto* s = vis.get_registry().get_named<int>("score")) {
     std::cout << *s << "\n";
 }
 ```
@@ -217,6 +171,13 @@ Having a global registry and `VisAdaptorBase` instance would be possible with th
 - Approach: Dynamic registry with auto-registration. Field/particle construction hooks register instances automatically into the global registry (`VisBase`). Adds helpers like find-by-ID and print/visit utilities to reduce boilerplate.
 - Pros: Minimal user code to participate in visualization; safer, more ergonomic dynamic approach.
 - Cons: Care needed for construction order and lifetime; still runtime-based dispatch.
+
+---
+
+## Variants overview
+- `src_fluent`: compile-time typed registry with a fluent/builder adaptor. Ergonomic add<"ID"> chaining; static guarantees.
+- `src_dynamic`: runtime map-based registry with compile-time ID→type mapping and runtime string API.
+- `src_dynamic_auto`: dynamic registry with auto-registration hooks.
 
 
 
