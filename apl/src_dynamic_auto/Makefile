@@ -33,12 +33,12 @@ $(OBJDIR):
 	mkdir -p $(OBJDIR)
 
 # Build amain executable
-$(AMAIN_EXE): amain.cpp VisBase.h bpl.h | $(OBJDIR)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ amain.cpp
+$(AMAIN_EXE): amain.cpp VisBase.h VisBase.hpp VisBase.cpp | $(OBJDIR)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ amain.cpp VisBase.cpp
 
 # Build bdemo example
-$(BDEMO_EXE): bdemo.cpp VisBase.h bpl.h | $(OBJDIR)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ bdemo.cpp
+$(BDEMO_EXE): bdemo.cpp VisBase.h VisBase.hpp VisBase.cpp | $(OBJDIR)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ bdemo.cpp VisBase.cpp
 
 # Individual build targets
 amain: $(AMAIN_EXE)

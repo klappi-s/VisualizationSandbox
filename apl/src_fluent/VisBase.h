@@ -1,0 +1,184 @@
+#pragma once
+#include "bpl.h"
+
+// Fluent builder for compile-time slot accumulation
+// Each add<"ID"> returns a new Builder with Slots... + Slot<"ID", T>
+
+template <typename... Slots>
+class VisAdaptorBase{
+    using registry_t = RegistryFluent<Slots...>;
+    std::shared_ptr<registry_t> registry;
+
+    // Clone existing bindings into a Next adaptor (with superset of Slots)
+    template <typename Next, std::size_t... Is>
+    void clone_into(Next& next, std::index_sequence<Is...>) const {
+        (clone_one<typename nth<Is, Slots...>::type>(next), ...);
+    }
+
+    template <typename SlotT, typename Next>
+    void clone_one(Next& next) const {
+        constexpr auto Id = SlotT::Id;
+        if (this->template contains<Id>()) {
+            // note: SetPtr now takes a templated pointer type
+            next.template set_ptr<Id>(&this->template get<Id>());
+        }
+    }
+
+public:
+    // Default: start with an empty registry for fluent building
+    VisAdaptorBase() : registry(std::make_shared<registry_t>()) {}
+
+    // Constructor from object references (enabled only when there is at least one Slot)
+    template <typename Dummy = void, typename = std::enable_if_t<(sizeof...(Slots) > 0), Dummy>>
+    VisAdaptorBase(typename Slots::type&... objs) {
+        registry = std::make_shared<registry_t>(
+            std::initializer_list<typename RegistryBase::Entry>{
+                typename RegistryBase::Entry{std::string(Slots::Id.sv()), &objs}...
+            }
+        );
+    }
+
+    // Constructor from pointers (enabled only when there is at least one Slot)
+    template <typename Dummy = void, typename = std::enable_if_t<(sizeof...(Slots) > 0), Dummy>, typename = Dummy>
+    VisAdaptorBase(typename Slots::type*... ptrs) {
+        registry = std::make_shared<registry_t>(
+            std::initializer_list<typename RegistryBase::Entry>{
+                typename RegistryBase::Entry{std::string(Slots::Id.sv()), ptrs}...
+            }
+        );
+    }
+
+    // Construct by copying an existing registry object (creates a new shared instance)
+    VisAdaptorBase(registry_t& r_init) {
+        registry = std::make_shared<registry_t>(r_init);
+    }
+
+    // Share ownership of an existing registry
+    VisAdaptorBase(std::shared_ptr<registry_t> reg)
+        : registry(std::move(reg)) {}
+
+    // Adopt from an existing unique_ptr (promote to shared_ptr)
+    VisAdaptorBase(std::unique_ptr<registry_t>& reg)
+        : registry(std::move(reg)) {}
+
+    // Accessors mirroring src_static
+    registry_t& get_registry() noexcept { return *registry; }
+    const registry_t& get_registry() const noexcept { return *registry; }
+    std::shared_ptr<registry_t> get_registry_ptr() const noexcept { return registry; }
+
+    template<fixed_string IdV, typename T>
+    auto add(T& obj) && {
+        // Compute at compile-time whether IdV is already in Slots...
+        constexpr bool already_present = ((Slots::Id == IdV) || ... || false);
+        if constexpr (already_present) {
+            std::cerr << "Warning: ID '" << std::string(IdV.sv())
+                      << "' already exists in this adaptor; ignoring add().\n";
+            return std::move(*this);
+        } else {
+            using NewSlot = Slot<IdV, std::remove_reference_t<T>>;
+            using NextAdaptor = VisAdaptorBase<Slots..., NewSlot>;
+            NextAdaptor next;  // starts with an empty registry
+            // carry over current bindings
+            this->clone_into(next, std::make_index_sequence<sizeof...(Slots)>{});
+            // bind the new one
+            next.template set<IdV>(obj);
+            return next;
+        }
+    }
+
+    template<fixed_string IdV, typename U>
+    void set(U& obj) { registry->template Set<IdV>(obj); }
+
+    template<fixed_string IdV, typename T>
+    void set_ptr(T* ptr) { registry->template SetPtr<IdV>(ptr); }
+
+    template<fixed_string IdV>
+    auto& get() const { return registry->template Get<IdV>(); }
+
+    template<fixed_string IdV>
+    bool contains() const { return registry->template Contains<IdV>(); }
+
+    template<fixed_string IdV>
+    void unset() { registry->template Unset<IdV>(); }
+
+    // Tag-based overloads to avoid needing 'template' at call sites
+    template<fixed_string IdV>
+    auto& get(id_tag<IdV>) const { return registry->template Get<IdV>(); }
+
+    template<fixed_string IdV>
+    bool contains(id_tag<IdV>) const { return registry->template Contains<IdV>(); }
+
+    template<fixed_string IdV, typename U>
+    void set(id_tag<IdV>, U& obj) { registry->template Set<IdV>(obj); }
+
+    template<fixed_string IdV, typename T>
+    void set_ptr(id_tag<IdV>, T* ptr) { registry->template SetPtr<IdV>(ptr); }
+
+    template<fixed_string IdV>
+    void unset(id_tag<IdV>) { registry->template Unset<IdV>(); }
+};
+
+// Convenience Factory (same as src_static)
+template <fixed_string... Ids, typename... Ts>
+auto MakeVisAdaptor(Ts&... objs)
+    -> VisAdaptorBase<Slot<Ids, std::remove_reference_t<Ts>>...>
+{
+    return VisAdaptorBase<Slot<Ids, std::remove_reference_t<Ts>>...>(objs...);
+}
+
+// Overloads to build from existing registries (shared/unique)
+template <typename... Slots>
+auto MakeVisAdaptor(std::shared_ptr<RegistryFluent<Slots...>> reg)
+    -> VisAdaptorBase<Slots...>
+{
+    return VisAdaptorBase<Slots...>(std::move(reg));
+}
+
+template <typename... Slots>
+auto MakeVisAdaptor(std::unique_ptr<RegistryFluent<Slots...>>& reg)
+    -> VisAdaptorBase<Slots...>
+{
+    return VisAdaptorBase<Slots...>(reg);
+}
+
+// === Helpers for easier fluent adds and name reuse ===
+
+// 1) add_slot: functional helper returning the new adaptor type.
+// Usage: auto vis = add_slot<"E2">(std::move(vis), fE);
+// Still requires a new variable name because the type changes.
+template <fixed_string IdV, typename Adaptor, typename Obj>
+auto add_slot(Adaptor&& ad, Obj& obj) {
+    return std::forward<Adaptor>(ad).template add<IdV>(obj);
+}
+
+// 2) with_added: continuation-style helper that lets you keep the same name
+// inside the provided lambda parameter.
+// Usage:
+//   with_added<"E2">(std::move(vis), fE, [&](auto&& vis){
+//       // use vis here (new type)
+//   });
+// Returns whatever the lambda returns.
+template <fixed_string IdV, typename Adaptor, typename Obj, typename F>
+auto with_added(Adaptor&& ad, Obj& obj, F&& fn) {
+    auto next = std::forward<Adaptor>(ad).template add<IdV>(obj);
+    return std::forward<F>(fn)(std::move(next));
+}
+
+// 3) VIS_REBIND: macro that creates a one-iteration scope where the new adaptor
+// shadows the old variable name. This lets you reuse the same identifier.
+// Usage:
+//   VIS_REBIND(vis, "E2", fE) {
+//       // here, vis is the new type
+//       // you can chain more operations or introduce another VIS_REBIND
+//   }
+// Note: the shadowed name only exists inside the following block.
+#ifndef VIS_REBIND
+#define VIS_REBIND(VAR, ID, OBJ)                                             \
+    for (bool _vis_once = true; _vis_once; _vis_once = false)                \
+        if (auto _vis_new = std::move(VAR).add<ID>(OBJ); true)               \
+            for (decltype(_vis_new)& VAR = _vis_new; _vis_once; _vis_once = false)
+#endif
+
+
+
+

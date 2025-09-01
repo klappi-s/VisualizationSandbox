@@ -4,14 +4,6 @@
 #include "VisRegistry.h"
 #include "VisBase.h"
 
+
 #include "particle.h"
 #include "field.h"
-
-
-
-
-// namespace bpl {
-    /*  nothing needs to be done */    
-// }
-
-

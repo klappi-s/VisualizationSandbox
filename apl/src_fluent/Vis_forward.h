@@ -1,5 +1,12 @@
-// Enhanced VisBase.h with user-friendly auto-compatible API
 #pragma once
+// Fluent variant: forward declarations, utilities, and public includes
+// This mirrors src_static's sectioned layout, with notes on fluent-specific changes.
+//
+// Differences vs src_static:
+// - Uses RegistryFluent instead of RegistryTyped (no m_names tracking).
+// - Provides id_tag/id<> tag-based API utilities.
+// - VisAdaptorBase supports fluent add<"ID"> that returns a new type (builder pattern).
+// - Shared_ptr-based registry ownership and construction from existing registries.
 
 // === Standard library includes (shared across components) ===
 #include <any>
@@ -19,12 +26,12 @@
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
+#include <initializer_list>
 
 // === Math types and utilities (vec, printing, random fill helpers) ===
 // vec<T,Dim> provides small fixed-size vectors with x/y/z/w accessors.
 // Stream operator<< prints vectors; helpers generate random values and print 2D arrays.
 
-// vec template definition (needed for vector field types)
 template <typename T, unsigned Dim>
 struct vec : public std::array<T, Dim> {
     T& x() requires (Dim >= 1) { return (*this)[0]; }
@@ -37,7 +44,6 @@ struct vec : public std::array<T, Dim> {
     const T& w() const requires (Dim >= 4) { return (*this)[3]; }
 };
 
-// Stream output operator for vec
 template <typename T, unsigned Dim>
 std::ostream& operator<<(std::ostream& os, const vec<T, Dim>& v) {
     os << "[";
@@ -48,33 +54,19 @@ std::ostream& operator<<(std::ostream& os, const vec<T, Dim>& v) {
     os << "]";
     return os;
 }
-// vec<int, 3> a({0,0,1});
-// std::cout << a  << std::endl;
 
 template<typename T, std::size_t ROWS>
 void fill_with_random(std::array<T, ROWS>& arr) {
     static_assert(std::is_integral_v<T> || std::is_floating_point_v<T>,
                   "Type T must be an integral or floating-point type.");
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    
-    T min = 0;
-    T max = 9;
-
+    std::random_device rd; std::mt19937 gen(rd());
+    T min = 0; T max = 9;
     if constexpr (std::is_integral_v<T>) {
         std::uniform_int_distribution<T> distrib(min, max);
-        for (auto& row : arr) {
-                row = distrib(gen);
-            
-        }
-    } 
-    else if constexpr (std::is_floating_point_v<T>) {
+        for (auto& row : arr) { row = distrib(gen); }
+    } else if constexpr (std::is_floating_point_v<T>) {
         std::uniform_real_distribution<T> distrib(min, max);
-        for (auto& row : arr) {
-                row = distrib(gen);
-            
-        }
+        for (auto& row : arr) { row = distrib(gen); }
     }
 }
 
@@ -82,119 +74,30 @@ template<typename T, std::size_t ROWS, unsigned COLS>
 void fill_with_random(std::array<vec<T, COLS>, ROWS>& arr) {
     static_assert(std::is_integral_v<T> || std::is_floating_point_v<T>,
                   "Type T must be an integral or floating-point type.");
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    
-    T min = 0;
-    T max = 9;
-
+    std::random_device rd; std::mt19937 gen(rd());
+    T min = 0; T max = 9;
     if constexpr (std::is_integral_v<T>) {
         std::uniform_int_distribution<T> distrib(min, max);
-        for (auto& row : arr) {
-            for (unsigned i = 0; i < COLS; ++i) {
-                row[i] = distrib(gen);
-            }
-        }
+        for (auto& row : arr) for (unsigned i = 0; i < COLS; ++i) row[i] = distrib(gen);
     } else if constexpr (std::is_floating_point_v<T>) {
         std::uniform_real_distribution<T> distrib(min, max);
-        for (auto& row : arr) {
-            for (unsigned i = 0; i < COLS; ++i) {
-                row[i] = distrib(gen);
-            }
-        }
+        for (auto& row : arr) for (unsigned i = 0; i < COLS; ++i) row[i] = distrib(gen);
     }
 }
 
-// Generic print function to check our work
 template<typename T, std::size_t ROWS, unsigned COLS>
 void print_2d_array(std::array<vec<T, COLS>, ROWS>& arr) {
-    // Set precision for floating-point types for cleaner output
     for (const auto& row : arr) {
-        for (const auto& element : row) {
-            std::cout << element << '\t';
-        }
+        for (const auto& element : row) std::cout << element << '\t';
         std::cout << '\n';
     }
-     std::cout << std::defaultfloat; // Reset cout format
+    std::cout << std::defaultfloat;
 }
-
-// === Vector/scalar trait utilities ===
-// Detect vector-like types and extract their scalar type and dimensions.
-// is_vector_type<T>, is_vec<T>, vector_dimension<T>, scalar_type<T>,
-// plus convenience aliases/variables: scalar_type_t<T>, is_vector_type_v<T>, vector_dimension_v<T>.
-
-// Type trait to detect if T is a vector-like type
-template<typename T>
-struct is_vector_type : std::false_type {};
-
-template<typename T2, unsigned VDim>
-struct is_vector_type<std::array<T2, VDim>> : std::true_type {};
-
-template<typename T2, unsigned VDim>
-struct is_vector_type<vec<T2, VDim>> : std::true_type {};
-
-// Forward declare vec to avoid circular dependency
-template<typename T, unsigned Dim>
-struct vec;
-
-// Helper template to detect vec types
-template<typename T>
-struct is_vec : std::false_type {};
-
-template<typename ScalarType, unsigned VDim>
-struct is_vec<vec<ScalarType, VDim>> : std::true_type {
-    using scalar_type = ScalarType;
-    static constexpr unsigned vdim = VDim;
-};
-
-// Extract VDim from vector types
-template<typename T>
-struct vector_dimension {
-    static constexpr unsigned value = 1; // Default for scalar types
-};
-
-template<typename T2, unsigned VDim>
-struct vector_dimension<std::array<T2, VDim>> {
-    static constexpr unsigned value = VDim;
-};
-
-template<typename T2, unsigned VDim>
-struct vector_dimension<vec<T2, VDim>> {
-    static constexpr unsigned value = VDim;
-};
-
-// Extract underlying scalar type
-template<typename T>
-struct scalar_type {
-    using type = T; // Default for scalar types
-};
-
-template<typename T2, unsigned VDim>
-struct scalar_type<std::array<T2, VDim>> {
-    using type = T2;
-};
-
-template<typename T2, unsigned VDim>
-struct scalar_type<vec<T2, VDim>> {
-    using type = T2;
-};
-
-template<typename T>
-using scalar_type_t = typename scalar_type<T>::type;
-
-// Add variable template shortcuts for our custom traits
-template<typename T>
-constexpr bool is_vector_type_v = is_vector_type<T>::value;
-
-template<typename T>
-constexpr unsigned vector_dimension_v = vector_dimension<T>::value;
 
 // === Compile-time ID utilities ===
 // fixed_string: C++20 NTTP string literal wrapper used to name registry slots at compile time.
 // operator== enables comparing IDs at compile time.
 
-// Compile-time string literal wrapper (C++20 NTTP).
 template <std::size_t N>
 struct fixed_string {
     char data[N]{};
@@ -203,6 +106,7 @@ struct fixed_string {
     }
     constexpr std::string_view sv() const { return std::string_view{data, N - 1}; }
 };
+
 template <std::size_t N, std::size_t M>
 constexpr bool operator==(const fixed_string<N>& a, const fixed_string<M>& b) {
     if constexpr (N != M) return false;
@@ -210,10 +114,15 @@ constexpr bool operator==(const fixed_string<N>& a, const fixed_string<M>& b) {
     return true;
 }
 
-// === Registry metaprogramming (compile-time Slots and lookup) ===
-// Slot<"id", T> binds an ID to a type.
-// nth<I, Ts...> selects the I-th type from a parameter pack.
-// find_index_rec locates the index of a Slot by its compile-time ID (or -1 if not found).
+// Tag type and inline variable to reference IDs without angle brackets
+// Fluent-only: avoids needing 'template' at call sites in dependent contexts.
+// Usage: vis.get(id<"density">)
+
+template <fixed_string Id>
+struct id_tag { static constexpr auto value = Id; };
+
+template <fixed_string Id>
+inline constexpr id_tag<Id> id{};
 
 // Slot<"id", T> declares one compile-time entry.
 template <fixed_string IdV, typename T>
@@ -222,9 +131,13 @@ struct Slot {
     using type = T;
 };
 
-// nth type helper
+// === Registry metaprogramming (compile-time Slots and lookup) ===
+// nth<I, Ts...> selects the I-th type from a parameter pack.
+// find_index_rec locates the index of a Slot by its compile-time ID (or -1 if not found).
+
 template <std::size_t I, typename First, typename... Rest>
 struct nth { using type = typename nth<I - 1, Rest...>::type; };
+
 template <typename First, typename... Rest>
 struct nth<0, First, Rest...> { using type = First; };
 
@@ -234,25 +147,33 @@ struct find_index_rec {
     static constexpr std::size_t value =
         (First::Id == IdV) ? I : find_index_rec<IdV, I + 1, Rest...>::value;
 };
+
 template <auto IdV, std::size_t I, typename Last>
 struct find_index_rec<IdV, I, Last> {
     static constexpr std::size_t value = (Last::Id == IdV) ? I : static_cast<std::size_t>(-1);
 };
 
+// meta: ensure no duplicate IDs in Slots
+template <typename...>
+struct ids_unique : std::true_type {};
+
+template <typename S, typename... Rest>
+struct ids_unique<S, Rest...>
+    : std::bool_constant<((!(Rest::Id == S::Id)) && ...) && ids_unique<Rest...>::value> {};
+
+// Helper dependent false
+template <auto>
+struct always_false_id : std::false_type {};
+
 // === Forward declarations to break circular dependencies ===
-// VisAdaptorBase is the high-level adaptor wrapper, parametrized by Slots...
-// RegistryBase/RegistryImmutable/VisRegistry are lower-level registry facilities.
-// Field and ParticleBase are user data types referenced by the registries.
+
+template <typename... Slots>
+class RegistryFluent;
 
 template <typename... Slots>
 class VisAdaptorBase;
 
 class RegistryBase;
-
-class RegistryImmutable;
-
-template<typename T, unsigned Dim, unsigned VDim>
-class VisRegistry ;
 
 template<typename T, unsigned Dim>
 class ParticleBase;
@@ -260,3 +181,9 @@ class ParticleBase;
 template<typename T, unsigned Dim>
 class Field;
 
+// === Aggregate public headers ===
+// Including public project headers here allows end-users to include only this file.
+#include "VisRegistry.h"
+#include "VisBase.h"
+#include "particle.h"
+#include "field.h"

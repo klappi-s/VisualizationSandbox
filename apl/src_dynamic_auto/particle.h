@@ -13,6 +13,8 @@ template<typename T, unsigned Dim>
 class ParticleBase : public ParticleBase_b {
   public:
 
+
+    // std::array<T, Dim> data;
     vec<T, Dim> data;
 
     ParticleBase();
@@ -22,6 +24,10 @@ class ParticleBase : public ParticleBase_b {
 
 };
 
+
+
+
+
 template<typename T, unsigned Dim>
 ParticleBase<T,Dim>::ParticleBase(std::string name, T v) : data({v}){
     
@@ -30,13 +36,17 @@ ParticleBase<T,Dim>::ParticleBase(std::string name, T v) : data({v}){
         
 }
 
+
+
 template<typename T, unsigned Dim>
 ParticleBase<T,Dim>::ParticleBase(std::string name){
     
     bunch_ID = name;
     fill_with_random(data);
         std::cout << "creating particle container (named)" << std::endl;
+        
 }
+
 
 template<typename T, unsigned Dim>
 ParticleBase<T,Dim>::ParticleBase() 
@@ -45,4 +55,8 @@ ParticleBase<T,Dim>::ParticleBase()
         fill_with_random(data);
         std::cout << "creating particle container (default)" << std::endl;
 }
+
+
+
+
 

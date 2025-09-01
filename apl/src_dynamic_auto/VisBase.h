@@ -1,6 +1,9 @@
 #pragma once
-#include "bpl.h"
+#include <iostream>
+#include "VisRegistry.h"
 
+// Forward declaration to avoid circular include with bpl.h
+namespace bpl { extern RegistryDynamic reg_g; }
 
 
 /*  again problem with base class pointer virtual function auto and child member methods */
@@ -15,20 +18,37 @@
 
 class VisAdaptorBase{
     using registry_t = RegistryDynamic;
-    std::shared_ptr<registry_t> registry;
+    registry_t* registry = nullptr;
+    bool owns_registry = false;
     // std::unique_ptr<RegistryBase> dynamic_registry;
 
 public:
 
     // Constructor 
     VisAdaptorBase(){
-        registry = std::make_shared<registry_t>();
+        registry = new registry_t();
+        owns_registry = true;
     }
 
-    // Accessors to the underlying registry
-    registry_t& get_registry() noexcept { return *registry; }
-    const registry_t& get_registry() const noexcept { return *registry; }
-    std::shared_ptr<registry_t> get_registry_ptr() const noexcept { return registry; }
+    ~VisAdaptorBase(){
+        if (owns_registry && registry){
+            delete registry;
+            registry = nullptr;
+        }
+    }
+
+    // Initialize to use the global registry
+    void init_global(){
+        if (registry == &bpl::reg_g) return;
+        if (owns_registry && registry){
+            std::cerr << "[VisAdaptorBase] Warning: switching to global registry; disposing of local registry" << std::endl;
+            delete registry;
+        } else {
+            std::cerr << "[VisAdaptorBase] Warning: switching to global registry" << std::endl;
+        }
+        registry = &bpl::reg_g;
+        owns_registry = false;
+    }
 
     // Late bind by compile-time ID
     template<fixed_string IdV, typename U>
@@ -45,6 +65,9 @@ public:
     template<fixed_string IdV>
     bool remove() { return registry->template Unset<IdV>(); }
 
+    // Backward-compat alias
+    template<fixed_string IdV>
+    auto& get_registry_entry() const { return registry->template Get<IdV>(); }
 
     // Runtime string API passthroughs
     template<typename T>

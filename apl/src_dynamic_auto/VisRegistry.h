@@ -1,17 +1,59 @@
 #pragma once
+#include <iostream>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <tuple>
+#include <any>
+#include <stdexcept>
+#include <initializer_list>
+#include <string_view>
+#include <type_traits>
 
 
-#include "Vis_forward.h"
-
-
+/////////////////////////////////////////////////////
+// NOOOO STAAAAAATICS... minimize global ...
+/////////////////////////////////////////////////////
 class RegistryBase{
 
     public:
 
     virtual ~RegistryBase() = default;
 
+    struct Entry {
+        std::string name;
+        std::any ptr_any;
+
+        template <typename T>
+        Entry(const std::string& entry_name, T* ptr)
+            : name(entry_name), ptr_any(ptr) {}
+    };
 };
 
+
+
+// Compile-time string literal wrapper (C++20 NTTP).
+template <std::size_t N>
+struct fixed_string {
+    char data[N]{};
+    constexpr fixed_string(const char (&str)[N]) {
+        for (std::size_t i = 0; i < N; ++i) data[i] = str[i];
+    }
+    constexpr std::string_view sv() const { return std::string_view{data, N - 1}; }
+};
+template <std::size_t N, std::size_t M>
+constexpr bool operator==(const fixed_string<N>& a, const fixed_string<M>& b) {
+    if constexpr (N != M) return false;
+    for (std::size_t i = 0; i < N; ++i) if (a.data[i] != b.data[i]) return false;
+    return true;
+}
+
+// Helper tag to pass fixed_string IDs as a type
+// Usage: fs_tag<"name">{}
+template <fixed_string Str>
+struct fs_tag {};
+
+// #define FIXED_STRING()
 
 
 

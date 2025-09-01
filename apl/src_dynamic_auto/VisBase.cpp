@@ -1,3 +1,8 @@
+#include "VisRegistry.h"
+
+// Provide a single definition for the global dynamic registry
+
+
 // #include "VisBase.h"
 // #include "VisBase.hpp"
 // #include "field.h"
