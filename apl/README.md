@@ -15,7 +15,6 @@ From any `apl/src_*` folder (e.g., `src_fluent`, `src_dynamic`, `src_dynamic_aut
 
 Notes:
 - The Registry does the main lifting; `VisAdaptorBase` is a facade that holds a smart pointer to a registry instance. Future adaptor variants can inherit from this base.
-- Facade-style operators that manage the underlying Registry via the adaptor are optional.
 
 ## src_fluent — Compile-time typed registry with a fluent adaptor
 
@@ -30,13 +29,25 @@ Template model
 - Slots encode mappping for compile-time fixed_string IDs and their bound types: `Slot<Id, T>`.
 - The registry is a templated type over its slots (see `VisRegistry.h`).
 
+Notes:
+- (Id and Ids...,  are fixed_strings, each string is a different struct/object type, compile time constant string implementation), can be simply used with eg. `"name_id"`.
+- tag_id is a helper struct 
+  ```cpp
+  template <fixed_string Id>
+  struct id_tag { static constexpr auto value = Id; };
+
+  template <fixed_string Id>
+  inline constexpr id_tag<Id> id{};
+  ```
+  so fixed strings can be used with `func(id<"id_name">)` instead of `func<"id_name">()` (via overlaoded func)
+
 Construction
 - Factories (helpers):
   - `MakeRegistry<Ids...>(objs...) -> std::unique_ptr<RegistryFluent<Slot<Ids, std::remove_reference_t<Ts>>...>>`
     - Binds each `Id` to the address of the corresponding `obj`.
 
 Operations
-- `Get<Id>() -> T&`
+- `Get<Id>() -> T&` / `Get(id<Id>) -> T&`
   - Returns a reference to the bound object. Throws if not bound.
 - `Set<Id>(U& obj)` / `set(id<Id>, obj)`
   - Late-binds/rebinds by reference. Statically checks that `U` matches the slot type `T`.
@@ -50,7 +61,7 @@ Notes
 - Strong compile-time checks: unknown Ids trigger `static_assert`.
 - `field.h`, `particle.h` provide demo data types.
 
-### VisAdaptorBase (fluent builder over the registry)
+### VisAdaptorBase 
 - Holds `std::shared_ptr` to the underlying registry type.
 - Use `get_registry()` to call the full registry API directly: `get_registry().template Get<"ID">()`, `Set`, `Contains`, `Unset` (including tag-based overloads on the registry).
 - Factories for adaptors:
