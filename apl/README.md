@@ -162,7 +162,7 @@ vis.get_registry().Set<"density">(density);
 std::cout << vis.get_registry().Get<"density">().data << "\n";
 ```
 
-Runtime string API (flexiblem but):
+Pure Runtime string API (more flexible without prior type registration but slower and need type info at time of retrieval ...):
 ```cpp
 VisAdaptorBase vis;
 int score = 42;
@@ -187,5 +187,17 @@ Having a global registry and link a VisAdaptorBase Instance with `global_init()`
 - `src_dynamic`: runtime map-based registry with compile-time ID→type mapping and runtime string API.
 - `src_dynamic_auto`: dynamic registry with auto-registration hooks.
 
+// ...existing code...
+
+---
+
+## Comparison: Fluent vs Dynamic (GPT-5)
+
+| Approach | Pros | Cons | Use when |
+|---|---|---|---|
+| src_fluent (compile-time typed) | - Strong compile-time type safety<br>- Zero/low runtime overhead<br>- Static dispatch and IDE guidance<br>- Clear failure at compile time | - Recompilation to add IDs/types<br>- Less flexible for plugins/runtime extension<br>- In case for multiple or evolving registry > Template bloat<br>- More ceremony to evolve schemas | - Performance-critical code paths<br>- Stable, well-known schemas<br>- You want static guarantees and early errors |
+| src_dynamic (runtime map + compile-time ID→type mapping) | - Single non-templated registry/adaptor type<br>- Bind/rebind at runtime<br>- Works well with modular/plugins<br>- Also offers a runtime string API | - Runtime lookups and errors (throws if missing)<br>- Slight overhead vs static approach<br>- Requires registration macros for ID→type mapping<br>- Lifetime management still on the user | - Extensible apps and plugins<br>- Prototyping and tooling integration<br>- You need to add/replace bindings at runtime |
 
 
+
+It rests to mention that the fluent approach could be "extended" with some elements of the dynamic approach, or merged in some sorts (two in one registry).
