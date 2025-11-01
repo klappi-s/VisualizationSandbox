@@ -30,8 +30,8 @@ export PV_PREFIX=/<PATH TO>/paraview_versions/ParaView-5.12.0-MPI-Linux-Python3.
 export CATALYST_IMPLEMENTATION_PATHS="${PV_PREFIX}/lib/catalyst"
 export CATALYST_IMPLEMENTATION_NAME=paraview
 
-# start paraview catalyst life session
-paraview --life 22222
+# start paraview catalyst live session
+paraview --live 22222
 
 # Launch the uniform mini app (default NP=2; override with NP)
 NP=1 ./run_uniform.sh
@@ -53,4 +53,4 @@ Then, in ParaView (built with MPICH), use "Catalyst Live" to connect to the runn
 ## Problem
 
 
-Both succeed in vtk file generation but with the uniform mesh, life visualisation in the paraview client only displays data from rank 0
+Both succeed in vtk file generation but with the uniform mesh, live visualisation in the paraview client only displays data from rank 0
