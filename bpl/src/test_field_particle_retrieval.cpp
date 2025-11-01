@@ -34,6 +34,15 @@ int main() {
     ParticleBase<T, Dim> particle1("electron_beam", {{1.0, 2.0, 3.0}});
     ParticleBase<T, Dim> particle2("proton_bunch", {{4.0, 5.0, 6.0}});
     
+
+
+
+
+
+
+
+
+    
     std::cout << "\n=== FIELD RETRIEVAL TESTS ===" << std::endl;
     
     // Test scalar field retrieval

@@ -142,7 +142,7 @@ int main(int argc, char** argv)
         // channel (mesh)
         conduit_cpp::Node ch = exec["catalyst/channels/uniform"];
         ch["type"].set("mesh");
-        // ch["state/multiblock"].set(1); // let PV treat ranks as partitions // breaks vtpd extraction
+        ch["state/multiblock"].set(1); // let PV treat ranks as partitions (required for live viz multi-rank)
 
         // Prepare field values (alternate order per step)
         if (step % 2 == 0) {

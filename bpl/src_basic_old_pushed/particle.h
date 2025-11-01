@@ -9,9 +9,6 @@ class ParticleBase_b{
     std::string bunch_ID;
     bool is_registered = false;  // Track registration status
     
-    // Virtual destructor to enable polymorphism and dynamic_cast
-    virtual ~ParticleBase_b() = default;
-    
     // Check if this particle was successfully registered
     bool isRegistered() const { return is_registered; }
 };
@@ -44,12 +41,7 @@ ParticleBase<T,Dim>::ParticleBase(std::string name, T v) : data(v){
     // Validate type before registering - catch exceptions internally
     try {
         VisBase::validateParticleType<T, Dim>();
-        VisBase::pb_c.push_back(this);  // Store in legacy container
-        
-        // Also store in typed registry
-        auto& registry = VisBase::getTypedRegistry<T, Dim>();
-        registry.particles.push_back(this);
-        
+        VisBase::pb_c.push_back(this);
         is_registered = true;  // Mark as successfully registered
     } catch (const std::runtime_error& e) {
         std::cout << "Particle creation failed: " << e.what() << std::endl;

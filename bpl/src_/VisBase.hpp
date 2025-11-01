@@ -121,31 +121,29 @@ void VisBase::registerFieldType(Field_b* field_ptr) {
 
 
 
-// getFieldRef_byType: Returns reference to Field object with exact type match
-template<typename FT, unsigned Dim>
-std::optional<std::reference_wrapper<Field<FT, Dim>>> VisBase::getFieldRef_byType(const std::string& field_id) {
+// Helper to get type information string
+std::string VisBase::getFieldTypeInfo(const std::string& field_id) {
     auto it = field_id_map.find(field_id);
-    if (it == field_id_map.end() || it->second >= sf_c.size()) {
-        return std::nullopt;
+    if (it == field_id_map.end() || it->second >= sf_type_info.size()) {
+        return "Field not found";
     }
     
-    size_t index = it->second;
-    const TypeInfo& info = sf_type_info[index];
-    auto [type_hash, dim, vdim, is_vector, scalar_type_hash] = info;
+    const TypeInfo& type_info = sf_type_info[it->second];
+    auto [type_hash, dim, vdim, is_vector, scalar_hash] = type_info;
     
-    // Check if the requested type and dimension match
-    if (type_hash != typeid(FT).hash_code() || dim != Dim) {
-        std::cout << "The requested Field_ID and the specified Type Info do not seem to match" << std::endl;
-        return std::nullopt;
+    std::string scalar_name;
+    if (scalar_hash == typeid(double).hash_code()) scalar_name = "double";
+    else if (scalar_hash == typeid(float).hash_code()) scalar_name = "float";
+    else if (scalar_hash == typeid(int).hash_code()) scalar_name = "int";
+    else scalar_name = "unknown";
+    
+    if (is_vector) {
+        return "Field<vec<" + scalar_name + ", " + std::to_string(vdim) + ">, " + std::to_string(dim) + ">";
+    } else {
+        return "Field<" + scalar_name + ", " + std::to_string(dim) + ">";
     }
-    
-    Field_b* field_ptr = sf_c[index];
-    if (auto* typed_field = dynamic_cast<Field<FT, Dim>*>(field_ptr)) {
-        return std::ref(*typed_field);
-    }
-    
-    return std::nullopt;
 }
+
 
 // Virtual functions
 int VisBase::get_size_pb() {
@@ -360,3 +358,123 @@ auto VisBase::visit_field(const std::string& field_id, Visitor&& visitor) {
     return visit_field_impl(field_id, is_vector, std::forward<Visitor>(visitor), supported_types{});
     // return visit_field_impl_2(field_id, is_vector, std::forward<Visitor>(visitor));
 }
+
+
+
+
+
+// ====== AUTO-TYPED FIELD ACCESS IMPLEMENTATIONS ======
+
+
+
+// getFieldRef_byType: Returns reference to Field object with exact type match
+template<typename FT, unsigned Dim>
+std::optional<std::reference_wrapper<Field<FT, Dim>>> VisBase::getFieldRef_byType(const std::string& field_id) {
+    auto it = field_id_map.find(field_id);
+    if (it == field_id_map.end() || it->second >= sf_c.size()) {
+        return std::nullopt;
+    }
+    
+    size_t index = it->second;
+    const TypeInfo& info = sf_type_info[index];
+    auto [type_hash, dim, vdim, is_vector, scalar_type_hash] = info;
+    
+    // Check if the requested type and dimension match
+    if (type_hash != typeid(FT).hash_code() || dim != Dim) {
+        std::cout << "The requested Field_ID and the specified Type Info do not seem to match" << std::endl;
+        return std::nullopt;
+    }
+    
+    Field_b* field_ptr = sf_c[index];
+    if (auto* typed_field = dynamic_cast<Field<FT, Dim>*>(field_ptr)) {
+        return std::ref(*typed_field);
+    }
+    
+    return std::nullopt;
+}
+
+
+
+
+
+
+
+// Simple auto-detection method - returns correctly typed pointer without template parameters
+void* VisBase::getTypedField(const std::string& field_id) {
+    Field_b* base = findFieldByID(field_id);
+    if (!base) return nullptr;
+    
+    // Get type information from registry
+    auto it = field_id_map.find(field_id);
+    if (it == field_id_map.end() || it->second >= sf_type_info.size()) {
+        return nullptr;
+    }
+    
+    const TypeInfo& type_info = sf_type_info[it->second];
+    auto [type_hash, dim, vdim, is_vector, scalar_hash] = type_info;
+    
+    // Auto-detect and cast based on stored type information
+    if (!is_vector) {
+        // Scalar fields
+        if (scalar_hash == typeid(double).hash_code()) {
+            switch (dim) {
+                case 1: return dynamic_cast<Field<double, 1>*>(base);
+                case 2: return dynamic_cast<Field<double, 2>*>(base);
+                case 3: return dynamic_cast<Field<double, 3>*>(base);
+                case 4: return dynamic_cast<Field<double, 4>*>(base);
+            }
+        } else if (scalar_hash == typeid(float).hash_code()) {
+            switch (dim) {
+                case 1: return dynamic_cast<Field<float, 1>*>(base);
+                case 2: return dynamic_cast<Field<float, 2>*>(base);
+                case 3: return dynamic_cast<Field<float, 3>*>(base);
+                case 4: return dynamic_cast<Field<float, 4>*>(base);
+            }
+        } else if (scalar_hash == typeid(int).hash_code()) {
+            switch (dim) {
+                case 1: return dynamic_cast<Field<int, 1>*>(base);
+                case 2: return dynamic_cast<Field<int, 2>*>(base);
+                case 3: return dynamic_cast<Field<int, 3>*>(base);
+                case 4: return dynamic_cast<Field<int, 4>*>(base);
+            }
+        }
+    } else {
+        // Vector fields - double vectors
+        if (scalar_hash == typeid(double).hash_code()) {
+            if (vdim == 1) {
+                switch (dim) {
+                    case 1: return dynamic_cast<Field<vec<double, 1>, 1>*>(base);
+                    case 2: return dynamic_cast<Field<vec<double, 1>, 2>*>(base);
+                    case 3: return dynamic_cast<Field<vec<double, 1>, 3>*>(base);
+                    case 4: return dynamic_cast<Field<vec<double, 1>, 4>*>(base);
+                }
+            } else if (vdim == 2) {
+                switch (dim) {
+                    case 1: return dynamic_cast<Field<vec<double, 2>, 1>*>(base);
+                    case 2: return dynamic_cast<Field<vec<double, 2>, 2>*>(base);
+                    case 3: return dynamic_cast<Field<vec<double, 2>, 3>*>(base);
+                    case 4: return dynamic_cast<Field<vec<double, 2>, 4>*>(base);
+                }
+            } else if (vdim == 3) {
+                switch (dim) {
+                    case 1: return dynamic_cast<Field<vec<double, 3>, 1>*>(base);
+                    case 2: return dynamic_cast<Field<vec<double, 3>, 2>*>(base);
+                    case 3: return dynamic_cast<Field<vec<double, 3>, 3>*>(base);
+                    case 4: return dynamic_cast<Field<vec<double, 3>, 4>*>(base);
+                }
+            } else if (vdim == 4) {
+                switch (dim) {
+                    case 1: return dynamic_cast<Field<vec<double, 4>, 1>*>(base);
+                    case 2: return dynamic_cast<Field<vec<double, 4>, 2>*>(base);
+                    case 3: return dynamic_cast<Field<vec<double, 4>, 3>*>(base);
+                    case 4: return dynamic_cast<Field<vec<double, 4>, 4>*>(base);
+                }
+            }
+        }
+        // Add float and int vector types as needed...
+    }
+    
+    return nullptr;
+}
+
+

@@ -8,9 +8,6 @@ class Field_b{
     std::string field_ID;
     bool is_registered = false;  // Track registration status
     
-    // Virtual destructor to enable polymorphism and dynamic_cast
-    virtual ~Field_b() = default;
-    
     // Check if this field was successfully registered
     bool isRegistered() const { return is_registered; }
 };
@@ -44,23 +41,10 @@ class Field : public Field_b{
             if constexpr (is_vec<T>::value) {
                 constexpr unsigned VDim = is_vec<T>::vdim;
                 VisBase::validateVectorFieldType<T, Dim, VDim>();
-                VisBase::vf_c.push_back(this);  // Store in legacy vector field container
-                
-                // Also store in typed registry - VDim must equal Dim (enforced by validation)
-                // Only register if VDim == Dim (validation will throw if not)
-                if constexpr (VDim == Dim) {
-                    using ScalarType = typename is_vec<T>::scalar_type;
-                    auto& registry = VisBase::getTypedRegistry<ScalarType, Dim>();
-                    registry.vector_fields.push_back(static_cast<Field<vec<ScalarType, Dim>, Dim>*>(this));
-                }
             } else {
                 VisBase::validateScalarFieldType<T, Dim>();
-                VisBase::sf_c.push_back(this);  // Store in legacy scalar field container
-                
-                // Also store in typed registry
-                auto& registry = VisBase::getTypedRegistry<T, Dim>();
-                registry.scalar_fields.push_back(this);
             }
+            VisBase::sf_c.push_back(this);
             is_registered = true;  // Mark as successfully registered
         } catch (const std::runtime_error& e) {
             std::cout << "Field creation failed: " << e.what() << std::endl;
@@ -83,20 +67,10 @@ class Field : public Field_b{
             if constexpr (is_vec<T>::value) {
                 constexpr unsigned VDim = is_vec<T>::vdim;
                 VisBase::validateVectorFieldType<T, Dim, VDim>();
-                VisBase::vf_c.push_back(this);  // Store in legacy vector field container
-                
-                // Also store in typed registry - VDim must equal Dim (enforced by validation)
-                using ScalarType = typename is_vec<T>::scalar_type;
-                auto& registry = VisBase::getTypedRegistry<ScalarType, Dim>();
-                registry.vector_fields.push_back(static_cast<Field<vec<ScalarType, Dim>, Dim>*>(this));
             } else {
                 VisBase::validateScalarFieldType<T, Dim>();
-                VisBase::sf_c.push_back(this);  // Store in legacy scalar field container
-                
-                // Also store in typed registry
-                auto& registry = VisBase::getTypedRegistry<T, Dim>();
-                registry.scalar_fields.push_back(this);
             }
+            VisBase::sf_c.push_back(this);
             is_registered = true;  // Mark as successfully registered
         } catch (const std::runtime_error& e) {
             std::cout << "Field creation failed: " << e.what() << std::endl;

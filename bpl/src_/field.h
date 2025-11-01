@@ -15,8 +15,28 @@ class Field_b{
     virtual std::any getData() const = 0;
     virtual size_t getTypeHash() const = 0;
     virtual size_t getDim() const = 0;
+
+
+    // virtual get_data();
+    // class Field_b {
+// public:
+//     virtual ??? getData() const = 0;  // What return type to use?
+// };
+
+// template<typename T, unsigned Dim>
+// class Field : public Field_b {
+// public:
+//     std::array<T, Dim> getData() const override {  // ERROR: can't change return type
+//         return data;
+//     }
+// };
 };
 
+
+/* problem:
+Certain functions will be type relevant, and can't be declared inside virtul field_b
+virtual needs so not field_b  version of the function will be enforced,
+but if type is unclear we ned aut  */
 
 template<typename T, unsigned Dim>
 class Field : public Field_b{
@@ -41,6 +61,8 @@ class Field : public Field_b{
     size_t getDim() const override {
         return Dim;
     }
+
+
     
     // Access data safely
     // const std::array<T, Dim>& getValue() const { return data; }

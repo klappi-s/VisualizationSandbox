@@ -5,7 +5,7 @@
 
 
 
-// Type information: (type_hash, Dim, VDim, is_vector, scalar_type_hash)
+//        Type information: (type_hash, Dim, VDim, is_vector, scalar_type_hash)
 using TypeInfo = std::tuple<size_t, unsigned, unsigned, bool, size_t>;
 
 
@@ -29,6 +29,16 @@ class VisBase{
     inline static std::unordered_map<std::string, size_t> field_id_map;
 
 
+    
+    // Template helper for type registration - registers both type info and extraction functions
+    template<typename FT, unsigned Dim>
+    static void registerFieldType(Field_b* field_ptr);
+
+
+
+
+
+
 
 
     static bool hasField(const std::string& field_id);
@@ -45,23 +55,36 @@ class VisBase{
     static std::vector<std::string> getListFieldsOfType_ID();
 
 
-
-
-   
+    // Helper to get type information string
+    static std::string getFieldTypeInfo(const std::string& field_id);
     
-    // Template helper for type registration - registers both type info and extraction functions
-    template<typename FT, unsigned Dim>
-    static void registerFieldType(Field_b* field_ptr);
 
 
 
 
-    
+    // ====== AUTO-TYPED FIELD ACCESS ======
+
     // getFieldRef_byType: Returns reference to Field object with exact type match  
     template<typename FT, unsigned Dim>
     static std::optional<std::reference_wrapper<Field<FT, Dim>>> getFieldRef_byType(const std::string& field_id);
     
 
+
+
+
+    // Simple auto-detection method - returns correctly typed pointer without template parameters
+    /*  but with void* therefore kinda useles...  */
+    static void* getTypedField(const std::string& field_id);
+    
+    // Template wrapper for convenience
+    template<typename T>
+    static T* getFieldAs(const std::string& field_id) {
+        void* ptr = getTypedField(field_id);
+        return static_cast<T*>(ptr);
+    }
+
+
+   
 
 
     

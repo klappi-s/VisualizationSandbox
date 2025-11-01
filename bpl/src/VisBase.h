@@ -264,6 +264,22 @@ public:
         
 
 
+/* =============================================================================================== */
+/* =============================================================================================== */
+/* =============================================================================================== */
+/* =============================================================================================== */
+/* =============================================================================================== */
+/* =============================================================================================== */
+/* =============================================================================================== */
+/* =============================================================================================== */
+/* =============================================================================================== */
+
+
+
+
+
+
+
 
 
 // Updated VisRegistry with all three apply functions
@@ -314,6 +330,10 @@ public:
     static Field<T, SearchDim>* findScalarFieldByID(const std::string& field_id) noexcept {
         return static_cast<Field<T, SearchDim>*>(findScalarFieldByID_impl<SearchDim>(field_id));
     }
+
+
+
+
     
     // Find vector field by ID with specific VDim (returns void* for flexibility)
     template<unsigned SearchDim = Dim, unsigned SearchVDim = 3>
@@ -346,6 +366,10 @@ public:
         return static_cast<Field<vec<T, SearchVDim>, SearchDim>*>(
             findVectorFieldByID_impl<SearchDim, SearchVDim>(field_id));
     }
+    
+
+
+
     
     // Generic field finder that searches both scalar and vector fields
     static void* findFieldByID(const std::string& field_id) noexcept {

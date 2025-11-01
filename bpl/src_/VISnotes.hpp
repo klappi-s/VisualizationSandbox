@@ -2,6 +2,113 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+// Add this to the VisBase class
+
+// Type-erased field pointer wrapper
+// class TypedFieldPtr {
+// private:
+//     void* ptr;
+//     size_t type_hash;
+//     unsigned dim;
+//     unsigned vdim;
+//     bool is_vector;
+    
+// public:
+//     TypedFieldPtr(void* p, size_t th, unsigned d, unsigned vd, bool iv) 
+//         : ptr(p), type_hash(th), dim(d), vdim(vd), is_vector(iv) {}
+    
+//     // Template method to get properly typed pointer
+//     template<typename T, unsigned Dim>
+//     Field<T, Dim>* as() const {
+//         // Verify type and dimension match
+//         if (typeid(T).hash_code() == type_hash && Dim == dim) {
+//             return static_cast<Field<T, Dim>*>(ptr);
+//         }
+//         return nullptr;
+//     }
+    
+//     // Auto-detect and return properly typed pointer
+//     template<typename T, unsigned Dim>
+//     auto get() const -> Field<T, Dim>* {
+//         return as<T, Dim>();
+//     }
+    
+//     // Helper methods to check type properties
+//     bool isVector() const { return is_vector; }
+//     unsigned getDim() const { return dim; }
+//     unsigned getVDim() const { return vdim; }
+//     size_t getTypeHash() const { return type_hash; }
+    
+//     // Check if conversion is valid
+//     template<typename T, unsigned Dim>
+//     bool canConvertTo() const {
+//         return typeid(T).hash_code() == type_hash && Dim == dim;
+//     }
+    
+//     // Raw pointer access (use with caution)
+//     void* getRawPtr() const { return ptr; }
+    
+//     // Base class access
+//     Field_b* getBase() const { return static_cast<Field_b*>(ptr); }
+// };
+
+// // The main function that returns a typed field pointer
+// static std::optional<TypedFieldPtr> get_field_ptr(const std::string& field_id);
+
+
+
+// Add this implementation
+
+// std::optional<VisBase::TypedFieldPtr> VisBase::get_field_ptr(const std::string& field_id) {
+//     auto it = field_id_map.find(field_id);
+//     if (it == field_id_map.end() || it->second >= sf_c.size()) {
+//         return std::nullopt;
+//     }
+    
+//     size_t index = it->second;
+//     const TypeInfo& info = sf_type_info[index];
+//     auto [type_hash, dim, vdim, is_vector, scalar_type_hash] = info;
+    
+//     Field_b* field_ptr = sf_c[index];
+    
+//     return TypedFieldPtr(static_cast<void*>(field_ptr), type_hash, dim, vdim, is_vector);
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //     // Compile-time dimension lists
 //     template<unsigned... Dims>
 //     struct dim_list {};

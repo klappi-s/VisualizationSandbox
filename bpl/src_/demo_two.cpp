@@ -5,7 +5,20 @@ using T = double;
 #include "bpl.h"
 
 
+// #include "easy_auto_cast.h"
 
+// // Get any field as correctly typed pointer
+// void* field_ptr = EasyFieldAccess::getTypedField("my_field");
+
+// // Check what type it is
+// std::string type = EasyFieldAccess::getFieldTypeInfo("my_field");
+// std::cout << "Type: " << type << std::endl;  // "Field<double, 3>"
+
+// // Cast to specific type if you want
+// auto* typed = EasyFieldAccess::getFieldAs<Field<double, 3>>("my_field");
+// if (typed) {
+//     typed->data[0] = 42.0;  // Full access to all methods!
+// }
 
 
 
