@@ -2,9 +2,9 @@
 set -euo pipefail
 
 # Adjust ParaView install prefix for your machine
-# PV_PREFIX=/home/klappi/AddApp/paraview_versions/ParaView-5.12.0-MPI-Linux-Python3.10-x86_64
-PV_PREFIX=/home/klappi/AddApp/paraview_versions/ParaView-5.13.2-MPI-Linux-Python3.10-x86_64
 
+# : "${PV_PREFIX:=/<PATH_TO_Paraview>/ParaView-5.12.0-MPI-Linux-Python3.10-x86_64}"
+: "${PV_PREFIX:=/<PATH_TO_Paraview>/ParaView-5.13.2-MPI-Linux-Python3.10-x86_64}"
 
 # Catalyst implementation (ParaView)
 export CATALYST_IMPLEMENTATION_PATHS="${PV_PREFIX}/lib/catalyst"
