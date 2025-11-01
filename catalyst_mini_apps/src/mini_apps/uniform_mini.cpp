@@ -12,7 +12,6 @@
 #include <string>
 #include <thread>
 
-// Enable MPI unconditionally (CMake finds MPI and links include paths)
 #include <mpi.h>
 #ifdef MPI_VERSION
 #  define MINI_HAVE_MPI 1
@@ -20,7 +19,6 @@
 #  define MINI_HAVE_MPI 0
 #endif
 
-// prefer conduit_cpp::Node (handle-like; behaves like ref semantics on subpaths)
 
 static std::string get_env_or(const char* key, const std::string& defval)
 {
@@ -64,7 +62,7 @@ static void build_uniform3d_mesh(conduit_cpp::Node data,
 int main(int argc, char** argv)
 {
 
-    
+
     // --- MPI init ---
     int rank = 0, size = 1;
 #if MINI_HAVE_MPI
@@ -104,11 +102,14 @@ int main(int argc, char** argv)
     catalyst_status ierr = catalyst_initialize(conduit_cpp::c_node(&init));
     if (ierr != catalyst_status_ok) {
         std::cerr << "catalyst_initialize failed with code " << static_cast<int>(ierr) << "\n";
+
 #if MINI_HAVE_MPI
         MPI_Abort(MPI_COMM_WORLD, 2);
 #else
         return 2;
 #endif
+
+
     }
 
 

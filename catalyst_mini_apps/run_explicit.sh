@@ -16,7 +16,7 @@ MPIEXEC="${PV_PREFIX}/lib/mpiexec"
 
 # Build dir and executable
 BUILD_DIR="build"
-EXE="${BUILD_DIR}/uniform_mini"
+EXE="${BUILD_DIR}/explicit_mini"
 
 if [ ! -x "${EXE}" ]; then
   echo "Executable ${EXE} not found. Run ./compile.sh first." >&2
