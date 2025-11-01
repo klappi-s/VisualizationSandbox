@@ -16,6 +16,7 @@ i use MPICH since official linux paraview binaries are built with this.
 ## Configure and build
 
 ```bash
+# might need to properly set <PATH_TO_Paraview> and <PATH_TO_CATALYST>/ in cmake bash
 ./cmake.sh
 ./compile.sh
 ```

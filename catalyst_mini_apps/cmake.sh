@@ -7,11 +7,12 @@ MPICC="${MPICH_PREFIX}/bin/mpicc"
 MPICXX="${MPICH_PREFIX}/bin/mpicxx"
 
 # Use mpiexec bundled with the ParaView MPICH build for runtime
-: "${PV_PREFIX:=/<PATH_TO_Paraview>/ParaView-5.12.0-MPI-Linux-Python3.10-x86_64}"
+# : "${PV_PREFIX:=/<PATH_TO_Paraview>/ParaView-5.12.0-MPI-Linux-Python3.10-x86_64}"
+: "${PV_PREFIX:=/<PATH_TO_Paraview>/ParaView-5.13.2-MPI-Linux-Python3.10-x86_64}"
 MPIEXEC_EXECUTABLE="${PV_PREFIX}/lib/mpiexec"
 
 # Catalyst CMake hint (MPICH-built Catalyst preferred)
-: "${CATALYST_HINT_PATH:=/home/klappi/AddApp/catalyst/install-mpich/lib/cmake/catalyst-2.0}"
+: "${CATALYST_HINT_PATH:=/<PATH_TO_CATALYST>/install-mpich/lib/cmake/catalyst-2.0}"
 
 # Build directory
 BUILD_DIR="build"
