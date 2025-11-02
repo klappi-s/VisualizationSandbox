@@ -4,6 +4,7 @@
 // - Field values change order every step; sleeps 1s to mimic a simulation
 
 #include <catalyst.hpp>
+#include <catalyst_conduit_blueprint.hpp>
 
 #include <chrono>
 #include <cstdint>
@@ -30,7 +31,8 @@ static void build_uniform3d_mesh(conduit_cpp::Node data,
                                  int nx, int ny, int nz,
                                  double ox, double oy, double oz,
                                  double dx, double dy, double dz,
-                                 const int32_t* vals_ptr, int64_t ncell)
+                                 const int32_t* vals_ptr, int64_t ncell,
+                                 int rank, int size)
 {
     // coordset
     data["coordsets/coords/type"].set("uniform");
@@ -47,6 +49,29 @@ static void build_uniform3d_mesh(conduit_cpp::Node data,
     // topology
     data["topologies/topo/type"].set("uniform");
     data["topologies/topo/coordset"].set("coords");
+
+    // // For multi-rank: specify the global whole extent so ParaView knows how pieces fit together
+    // if (size > 1) {
+    //     conduit_cpp::Node state = data["state"];
+    //     // Compute global extents assuming X is partitioned
+    //     const int global_nx = (size == 2 ? (nx - 1) * 2 + 1 : nx); // 2 ranks: 3 pts each, overlap 1 → 5 total
+    //     state["whole_extents/i"].append().set(0);
+    //     state["whole_extents/i"].append().set(global_nx - 1);
+    //     state["whole_extents/j"].append().set(0);
+    //     state["whole_extents/j"].append().set(ny - 1);
+    //     state["whole_extents/k"].append().set(0);
+    //     state["whole_extents/k"].append().set(nz - 1);
+        
+    //     // Piece extent for this rank
+    //     const int i_start = rank * (nx - 1);
+    //     const int i_end = i_start + (nx - 1);
+    //     state["extents/i"].append().set(i_start);
+    //     state["extents/i"].append().set(i_end);
+    //     state["extents/j"].append().set(0);
+    //     state["extents/j"].append().set(ny - 1);
+    //     state["extents/k"].append().set(0);
+    //     state["extents/k"].append().set(nz - 1);
+    // }
 
     // one element-associated int field (external array provided)
     const int ex = nx - 1;
@@ -153,7 +178,22 @@ int main(int argc, char** argv)
 
     // tile ranks along X so each rank shows a distinct partition
     const double ox = ox0 + rank * (nx - 1) * dx;
-        build_uniform3d_mesh(ch["data"], nx, ny, nz, ox, oy0, oz0, dx, dy, dz, vals.data(), ncell);
+        build_uniform3d_mesh(ch["data"], nx, ny, nz, ox, oy0, oz0, dx, dy, dz, vals.data(), ncell, rank, size);
+
+        // Verify the mesh using Conduit's mesh blueprint verification
+        conduit_cpp::Node verify_info;
+        bool is_valid = conduit_cpp::Blueprint::verify("mesh", ch["data"], verify_info);
+        if (!is_valid) {
+            std::cerr << "[Rank " << rank << "] Mesh blueprint verification FAILED at step " << step << ":\n";
+            verify_info.print();
+#if MINI_HAVE_MPI
+            MPI_Abort(MPI_COMM_WORLD, 3);
+#else
+            return 3;
+#endif
+        } else if (step == 0) {
+            std::cout << "[Rank " << rank << "] Mesh blueprint verification PASSED at step " << step << "\n";
+        }
 
         if(step==0){
         #if defined MINI_HAVE_MPI
